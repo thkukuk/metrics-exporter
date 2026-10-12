@@ -75,7 +75,7 @@ executable('metrics-exporter',
 
 # Generate config.h
 #subdir('include')
-subdir('etc')
+#subdir('etc')
 subdir('systemd')
 subdir('man')
 
