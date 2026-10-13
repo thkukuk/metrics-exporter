@@ -56,8 +56,7 @@ metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
   return metric_build_send(mf, link, v);
 }
 
-#if 0 /* XXX */
-static int
+int
 metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link, uint64_t value)
 {
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
@@ -69,7 +68,17 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link, uint64_t va
 
   return metric_build_send(mf, link, v);
 }
-#endif
+
+int
+metric_build_send_error(const MetricFamily *mf, sd_varlink *link, int r)
+{
+  _cleanup_free_ char *error = NULL;
+
+  if (asprintf(&error, "ERROR: %s", strerror(r)) < 0)
+    error = NULL;
+  log_msg(LOG_ERR, "%s", stroom(error));
+  return metric_build_send_string(mf, link, stroom(error));
+}
 
 static int
 metrics_version_generate(const MetricFamily *mf, sd_varlink *link)

@@ -28,6 +28,11 @@ extern int metric_build_send(const MetricFamily *mf, sd_varlink *link,
 			     sd_json_variant *value);
 extern int metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
 				    const char *value);
+extern int metric_build_send_unsigned(const MetricFamily *mf,
+				      sd_varlink *link, uint64_t value);
+
+extern int metric_build_send_error(const MetricFamily *mf,
+				   sd_varlink *link, int r);
 
 extern int vl_method_metrics_describe(sd_varlink *link,
 	       			      sd_json_variant *parameters,
