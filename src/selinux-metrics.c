@@ -13,6 +13,7 @@
 
 #include "basics.h"
 #include "log_msg.h"
+#include "exec_cmd.h"
 #include "metrics-varlink.h"
 #include "selinux-metrics.h"
 
@@ -204,6 +205,36 @@ metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link
 #endif
 }
 
+static int
+metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *link)
+{
+#ifdef WITH_SELINUX
+  _cleanup_free_ char *rpm_info = NULL;
+  char *version, *release, *arch;
+  int r;
+
+  r = exec_cmd(&rpm_info, "rpm", "rpm", "-q", "--qf", "%{VERSION} %{RELEASE} %{ARCH}", "selinux-policy", NULL);
+  if (r < 0)
+    {
+      log_msg(LOG_ERR, "exec_cmd(rpm -q --qf...) failed: %s", strerror(-r));
+      return 0;
+    }
+
+  log_msg(LOG_DEBUG, "exec_cmd(rpm): %s", strna(rpm_info));
+
+  if (isempty(rpm_info))
+    return 0;
+
+  version = strtok(rpm_info, " ");
+  release = strtok(NULL, " ");
+  arch    = strtok(NULL, " ");
+
+  return metric_build_send_rpm(mf, link, "selinux-policy", strempty(version), strempty(release), strempty(arch));
+#else
+  return 0;
+#endif
+}
+
 static const MetricFamily selinux_metric_family_table[] = {
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.Status",
@@ -254,10 +285,16 @@ static const MetricFamily selinux_metric_family_table[] = {
     .generate = metrics_selinux_checkreqprot_generate,
   },
   {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.PolicyVersion",
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.MaxKernelPolicyVersion",
     .description = "Max kernel policy version",
     .type = METRIC_FAMILY_TYPE_GAUGE,
     .generate = metrics_selinux_policy_version_generate,
+  },
+  {
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.PolicyRPMVersion",
+    .description = "Version of selinux-policy RPM",
+    .type = METRIC_FAMILY_TYPE_STRING,
+    .generate = metrics_selinux_policy_rpm_version_generate,
   },
   {}
 };
