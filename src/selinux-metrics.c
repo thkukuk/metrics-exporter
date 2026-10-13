@@ -35,6 +35,9 @@ metrics_selinux_mode_generate(const MetricFamily *mf, sd_varlink *link)
 #ifdef WITH_SELINUX
   int r;
 
+  if (!is_selinux_enabled())
+    return 0;
+
   r = security_getenforce();
   if (r == 0)
     return metric_build_send_string(mf, link, "permissive");
@@ -53,6 +56,9 @@ metrics_selinux_mode_configfile_generate(const MetricFamily *mf, sd_varlink *lin
 #ifdef WITH_SELINUX
   int rc;
   int r;
+
+  if (!is_selinux_enabled())
+    return 0;
 
   r = selinux_getenforcemode(&rc);
   if (r != 0)
@@ -103,6 +109,9 @@ metrics_selinux_policy_generate(const MetricFamily *mf, sd_varlink *link)
 #ifdef WITH_SELINUX
   const char *policy_path;
 
+  if (!is_selinux_enabled())
+    return 0;
+
   policy_path = selinux_policy_root();
   if (isempty(policy_path))
     return 0;
@@ -118,6 +127,9 @@ metrics_selinux_policy_mls_generate(const MetricFamily *mf, sd_varlink *link)
 {
 #ifdef WITH_SELINUX
   int r;
+
+  if (!is_selinux_enabled())
+    return 0;
 
   r = is_selinux_mls_enabled();
   if (r == 0)
@@ -137,6 +149,9 @@ metrics_selinux_policy_deny_unknown_generate(const MetricFamily *mf, sd_varlink 
 #ifdef WITH_SELINUX
   int r;
 
+  if (!is_selinux_enabled())
+    return 0;
+
   r = security_deny_unknown();
   if (r == 0)
     return metric_build_send_string(mf, link, "allowed");
@@ -155,6 +170,9 @@ metrics_selinux_checkreqprot_generate(const MetricFamily *mf, sd_varlink *link)
 #ifdef WITH_SELINUX
   int r;
 
+  if (!is_selinux_enabled())
+    return 0;
+
   r = security_get_checkreqprot();
   if (r == 0)
     return metric_build_send_string(mf, link, "actual (secure)");
@@ -172,6 +190,9 @@ metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link
 {
 #ifdef WITH_SELINUX
   int vers;
+
+  if (!is_selinux_enabled())
+    return 0;
 
   vers = security_policyvers();
   if (vers < 0)
