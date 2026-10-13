@@ -4,7 +4,7 @@ DefaultDependencies=no
 Before=sockets.target
 
 [Socket]
-ListenStream=/run/systemd/report/org.openSUSE.metrics
+ListenStream=/run/systemd/report/org.openSUSE.Metrics
 FileDescriptorName=varlink
 SocketMode=0666
 Accept=yes
