@@ -27,7 +27,7 @@ configdir = join_paths(prefixdir, get_option('datadir'), meson.project_name())
 
 cc = meson.get_compiler('c')
 pkg = import('pkgconfig')
-inc = include_directories(['include'])
+inc = include_directories(['include', 'lib'])
 
 add_project_arguments(['-D_GNU_SOURCE=1',
 		       '-DXTSTRINGDEFINES',
@@ -62,13 +62,22 @@ if libselinux.found()
   conf.set('WITH_SELINUX', 1)
 endif
 
-metrics_exporter_c = ['src/metrics-exporter.c', 'src/log_msg.c',
+libcommon_c = files('lib/log_msg.c')
+libcommon = static_library(
+  'common',
+  libcommon_c,
+  include_directories : inc,
+  install : false
+)
+
+metrics_exporter_c = ['src/metrics-exporter.c',
                       'src/varlink-io.systemd.Metrics.c',
                       'src/metrics-varlink.c', 'src/selinux-metrics.c']
 
 executable('metrics-exporter',
            metrics_exporter_c,
            include_directories : inc,
+	   link_with : [libcommon],
            dependencies : [libeconf, libsystemd, libselinux],
            install : true,
 	   install_dir: libexecdir)
