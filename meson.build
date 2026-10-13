@@ -62,7 +62,7 @@ if libselinux.found()
   conf.set('WITH_SELINUX', 1)
 endif
 
-libcommon_c = files('lib/log_msg.c')
+libcommon_c = files('lib/log_msg.c', 'lib/exec_cmd.c')
 libcommon = static_library(
   'common',
   libcommon_c,
@@ -89,7 +89,7 @@ subdir('systemd')
 #subdir('man')
 
 # Unit tests
-#subdir('tests')
+subdir('tests')
 
 conf.set_quoted('VERSION', meson.project_version())
 conf.set_quoted('PACKAGE', meson.project_name())
