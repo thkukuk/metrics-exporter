@@ -46,7 +46,7 @@ metric_build_send(const MetricFamily *mf, sd_varlink *link,
 
 int
 metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
-			 const char *value)
+			 const char *value, sd_json_variant *fields)
 {
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
   int r;
@@ -55,11 +55,12 @@ metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, v, NULL);
+  return metric_build_send(mf, link, v, fields);
 }
 
 int
-metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link, uint64_t value)
+metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
+			   uint64_t value, sd_json_variant *fields)
 {
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
   int r;
@@ -68,7 +69,7 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link, uint64_t va
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, v, NULL);
+  return metric_build_send(mf, link, v, fields);
 }
 
 int
@@ -99,21 +100,10 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
   return metric_build_send(mf, link, value, fields);
 }
 
-int
-metric_build_send_error(const MetricFamily *mf, sd_varlink *link, int r)
-{
-  _cleanup_free_ char *error = NULL;
-
-  if (asprintf(&error, "ERROR: %s", strerror(r)) < 0)
-    error = NULL;
-  log_msg(LOG_ERR, "%s", stroom(error));
-  return metric_build_send_string(mf, link, stroom(error));
-}
-
 static int
 metrics_version_generate(const MetricFamily *mf, sd_varlink *link)
 {
-  return metric_build_send_string(mf, link, VERSION);
+  return metric_build_send_string(mf, link, VERSION, NULL);
 }
 
 static const MetricFamily main_metric_family_table[] = {

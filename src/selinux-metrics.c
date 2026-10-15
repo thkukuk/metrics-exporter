@@ -22,9 +22,9 @@ metrics_selinux_status_generate(const MetricFamily *mf, sd_varlink *link)
 {
 #ifdef WITH_SELINUX
   if (is_selinux_enabled() > 0)
-    return metric_build_send_string(mf, link, "enabled");
+    return metric_build_send_string(mf, link, "enabled", NULL);
   else
-    return metric_build_send_string(mf, link, "disabled");
+    return metric_build_send_string(mf, link, "disabled", NULL);
 #else
   return 0;
 #endif
@@ -41,11 +41,15 @@ metrics_selinux_mode_generate(const MetricFamily *mf, sd_varlink *link)
 
   r = security_getenforce();
   if (r == 0)
-    return metric_build_send_string(mf, link, "permissive");
+    return metric_build_send_string(mf, link, "permissive", NULL);
   else if (r == 1)
-    return metric_build_send_string(mf, link, "enforcing");
+    return metric_build_send_string(mf, link, "enforcing", NULL);
   else
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "security_getenforce() failed: %s", strerror(-r));
+      return r;
+    }
 #else
   return 0;
 #endif
@@ -63,16 +67,20 @@ metrics_selinux_mode_configfile_generate(const MetricFamily *mf, sd_varlink *lin
 
   r = selinux_getenforcemode(&rc);
   if (r != 0)
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "selinux_getenforcemode() failed: %s", strerror(-r));
+      return r;
+    }
 
   if (rc == 0)
-    return metric_build_send_string(mf, link, "permissive");
+    return metric_build_send_string(mf, link, "permissive", NULL);
   else if (rc == 1)
-    return metric_build_send_string(mf, link, "enforcing");
+    return metric_build_send_string(mf, link, "enforcing", NULL);
   else if (rc == -1)
-    return metric_build_send_string(mf, link, "disabled");
+    return metric_build_send_string(mf, link, "disabled", NULL);
   else
-    return metric_build_send_string(mf, link, "unknown");
+    return metric_build_send_string(mf, link, "unknown", NULL);
 #else
   return 0;
 #endif
@@ -92,13 +100,16 @@ metrics_selinux_root_dir_generate(const MetricFamily *mf, sd_varlink *link)
 
   cp = strdup(root_dir);
   if (cp == NULL)
-    return metric_build_send_error(mf, link, ENOMEM);
+    {
+      log_msg(LOG_ERR, "%s", strerror(ENOMEM));
+      return -ENOMEM;
+    }
 
   len = strlen(cp);
   if (cp[len-1] == '/')
     cp[len-1] = '\0';
 
-  return metric_build_send_string(mf, link, cp);
+  return metric_build_send_string(mf, link, cp, NULL);
 #else
   return 0;
 #endif
@@ -117,7 +128,7 @@ metrics_selinux_policy_generate(const MetricFamily *mf, sd_varlink *link)
   if (isempty(policy_path))
     return 0;
 
-  return metric_build_send_string(mf, link, basename(policy_path));
+  return metric_build_send_string(mf, link, basename(policy_path), NULL);
 #else
   return 0;
 #endif
@@ -134,11 +145,15 @@ metrics_selinux_policy_mls_generate(const MetricFamily *mf, sd_varlink *link)
 
   r = is_selinux_mls_enabled();
   if (r == 0)
-    return metric_build_send_string(mf, link, "disabled");
+    return metric_build_send_string(mf, link, "disabled", NULL);
   else if (r == 1)
-    return metric_build_send_string(mf, link, "enabled");
+    return metric_build_send_string(mf, link, "enabled", NULL);
   else
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "is_selinux_mls_enabled() failed: %s", strerror(-r));
+      return r;
+    }
 #else
   return 0;
 #endif
@@ -155,11 +170,15 @@ metrics_selinux_policy_deny_unknown_generate(const MetricFamily *mf, sd_varlink 
 
   r = security_deny_unknown();
   if (r == 0)
-    return metric_build_send_string(mf, link, "allowed");
+    return metric_build_send_string(mf, link, "allowed", NULL);
   else if (r == 1)
-    return metric_build_send_string(mf, link, "denied");
+    return metric_build_send_string(mf, link, "denied", NULL);
   else
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "security_deny_unknown() failed: %s", strerror(-r));
+      return r;
+    }
 #else
   return 0;
 #endif
@@ -176,11 +195,15 @@ metrics_selinux_checkreqprot_generate(const MetricFamily *mf, sd_varlink *link)
 
   r = security_get_checkreqprot();
   if (r == 0)
-    return metric_build_send_string(mf, link, "actual (secure)");
+    return metric_build_send_string(mf, link, "actual (secure)", NULL);
   else if (r == 1)
-    return metric_build_send_string(mf, link, "requested (insecure)");
+    return metric_build_send_string(mf, link, "requested (insecure)", NULL);
   else
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "security_get_checkreqprot() failed: %s", strerror(-r));
+      return r;
+    }
 #else
   return 0;
 #endif
@@ -191,15 +214,20 @@ metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link
 {
 #ifdef WITH_SELINUX
   int vers;
+  int r;
 
   if (!is_selinux_enabled())
     return 0;
 
   vers = security_policyvers();
   if (vers < 0)
-    return metric_build_send_error(mf, link, errno);
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "security_policyvers() failed: %s", strerror(-r));
+      return r;
+    }
 
-  return metric_build_send_unsigned(mf, link, vers);
+  return metric_build_send_unsigned(mf, link, vers, NULL);
 #else
   return 0;
 #endif
@@ -233,6 +261,54 @@ metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *
 #else
   return 0;
 #endif
+}
+
+static int
+metrics_selinux_policy_booleans_generate(const MetricFamily *mf, sd_varlink *link)
+{
+#ifdef WITH_SELINUX
+  char **bools = NULL;
+  int nbool = 0;
+  int r;
+
+  if (!is_selinux_enabled())
+    return 0;
+
+  if (security_get_boolean_names(&bools, &nbool) >= 0)
+    {
+      for (int i = 0; i < nbool; i++)
+	{
+	  const char *state;
+
+	  r = security_get_boolean_active(bools[i]);
+	  if (r < 0)
+	    {
+	      log_msg(LOG_ERR, "security_get_boolean_active() failed: %s", strerror(errno));
+	      return 0;
+	    }
+	  else if (r == 0)
+	    state = "off";
+	  else if (r == 1)
+	    state = "on";
+	  else
+	    state = "unknown";
+
+	  _cleanup_(sd_json_variant_unrefp) sd_json_variant *fields = NULL;
+	  r = sd_json_buildo(
+			     &fields,
+			     SD_JSON_BUILD_PAIR_STRING("state", state));
+	  if (r < 0)
+	    {
+	      log_msg(LOG_ERR, "Failed to build metric fields: %s", strerror(-r));
+	      return 0;
+	    }
+	  r = metric_build_send_string(mf, link, bools[i], fields);
+	  if (r < 0)
+	    return r;
+	}
+    }
+#endif
+  return 0;
 }
 
 static const MetricFamily selinux_metric_family_table[] = {
@@ -295,6 +371,12 @@ static const MetricFamily selinux_metric_family_table[] = {
     .description = "Version of selinux-policy RPM",
     .type = METRIC_FAMILY_TYPE_STRING,
     .generate = metrics_selinux_policy_rpm_version_generate,
+  },
+  {
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.PolicyBooleans",
+    .description = "Report the current state of booleans",
+    .type = METRIC_FAMILY_TYPE_STRING,
+    .generate = metrics_selinux_policy_booleans_generate,
   },
   {}
 };
