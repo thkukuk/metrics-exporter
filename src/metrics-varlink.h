@@ -25,11 +25,13 @@ typedef struct MetricFamily {
 extern const char *metric_family_type_to_str(MetricFamilyType type);
 
 extern int metric_build_send(const MetricFamily *mf, sd_varlink *link,
-			     sd_json_variant *value, sd_json_variant *fields);
+			     const char *object, sd_json_variant *value,
+			     sd_json_variant *fields);
 extern int metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
-				    const char *value, sd_json_variant *fields);
-extern int metric_build_send_unsigned(const MetricFamily *mf,
-				      sd_varlink *link, uint64_t value,
+				    const char *object, const char *value,
+				    sd_json_variant *fields);
+extern int metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
+				      const char *object, uint64_t value,
 				      sd_json_variant *fields);
 extern int metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
 				 const char *name, const char *version,

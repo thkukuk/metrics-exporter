@@ -35,10 +35,13 @@ metric_family_type_to_str(MetricFamilyType type)
 
 int
 metric_build_send(const MetricFamily *mf, sd_varlink *link,
-		  sd_json_variant *value, sd_json_variant *fields)
+		  const char *object, sd_json_variant *value,
+		  sd_json_variant *fields)
 {
   return sd_varlink_replybo(link,
 			    SD_JSON_BUILD_PAIR_STRING("name", mf->name),
+			    SD_JSON_BUILD_PAIR_CONDITION(!isempty(object), "object",
+							 SD_JSON_BUILD_STRING(object)),
 			    SD_JSON_BUILD_PAIR_VARIANT("value", value),
 			    SD_JSON_BUILD_PAIR_CONDITION(fields != NULL, "fields",
 							 SD_JSON_BUILD_VARIANT(fields)));
@@ -46,7 +49,8 @@ metric_build_send(const MetricFamily *mf, sd_varlink *link,
 
 int
 metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
-			 const char *value, sd_json_variant *fields)
+			 const char *object, const char *value,
+			 sd_json_variant *fields)
 {
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
   int r;
@@ -55,12 +59,13 @@ metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, v, fields);
+  return metric_build_send(mf, link, object, v, fields);
 }
 
 int
 metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
-			   uint64_t value, sd_json_variant *fields)
+			   const char *object, uint64_t value,
+			   sd_json_variant *fields)
 {
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
   int r;
@@ -69,7 +74,7 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, v, fields);
+  return metric_build_send(mf, link, object, v, fields);
 }
 
 int
@@ -97,13 +102,13 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, value, fields);
+  return metric_build_send(mf, link, name, value, fields);
 }
 
 static int
 metrics_version_generate(const MetricFamily *mf, sd_varlink *link)
 {
-  return metric_build_send_string(mf, link, VERSION, NULL);
+  return metric_build_send_string(mf, link, NULL, VERSION, NULL);
 }
 
 static const MetricFamily main_metric_family_table[] = {
