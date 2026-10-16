@@ -411,12 +411,14 @@ selinux_metrics_describe(sd_varlink *link)
 }
 
 int
-selinux_metrics_list(sd_varlink *link)
+selinux_metrics_list(sd_varlink *link, bool booleans)
 {
   int r;
 
   for (const MetricFamily *mf = selinux_metric_family_table; mf->name; mf++)
     {
+      if (!booleans && streq(mf->name, METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.PolicyBooleans"))
+	continue;
       r = mf->generate(mf, link);
       if (r < 0)
 	{

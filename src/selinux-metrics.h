@@ -2,5 +2,7 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 extern int selinux_metrics_describe(sd_varlink *link);
-extern int selinux_metrics_list(sd_varlink *link);
+extern int selinux_metrics_list(sd_varlink *link, bool booleans);

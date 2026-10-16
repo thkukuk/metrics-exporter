@@ -11,6 +11,7 @@
 
 #include "basics.h"
 #include "log_msg.h"
+#include "read_config.h"
 #include "metrics-varlink.h"
 #include "varlink-io.systemd.Metrics.h"
 
@@ -162,8 +163,9 @@ vl_method_metrics_describe(sd_varlink *link, sd_json_variant *parameters,
 int
 vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
                        sd_varlink_method_flags_t _unused_(flags),
-		       void _unused_(*userdata))
+		       void *userdata)
 {
+  config_t *cfg = userdata;
   int r;
 
   r = sd_varlink_dispatch(link, parameters, /* dispatch_table= */ NULL, /* userdata= */ NULL);
@@ -184,7 +186,8 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
 	}
     }
 
-  r = selinux_metrics_list(link);
+  if (cfg->selinux)
+    r = selinux_metrics_list(link, cfg->selinux_booleans);
   if (r < 0)
     return r;
 

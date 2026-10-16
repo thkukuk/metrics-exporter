@@ -13,23 +13,32 @@
 #include "log_msg.h"
 #include "varlink-io.systemd.Metrics.h"
 #include "metrics-varlink.h"
-
-static int verbose_flag = 0;
+#include "read_config.h"
 
 static int
-run_varlink(void)
+run_varlink(struct config_t *cfg)
 {
   _cleanup_(sd_varlink_server_unrefp) sd_varlink_server *varlink_server = NULL;
   int r;
 
-  /* XXX difference to systemd varlink_server_new()? */
-  r = sd_varlink_server_new(&varlink_server, /* flags= */ 0);
+  r = sd_varlink_server_new(&varlink_server, SD_VARLINK_SERVER_INHERIT_USERDATA);
   if (r < 0)
     {
       log_msg(LOG_ERR, "Failed to allocate varlink server: %s",
 	      strerror(-r));
       return r;
     }
+
+  r = sd_varlink_server_set_info(varlink_server,
+				 "<vendor>", //XXX
+				 PACKAGE,
+				 VERSION,
+				 "https://github.com/thkukuk/metrics-server");
+    if (r < 0)
+      log_msg(LOG_WARNING, "Failed to set server info (varlink): %s",
+	      strerror(-r)); // no real error, only informal data
+
+  sd_varlink_server_set_userdata(varlink_server, cfg);
 
   r = sd_varlink_server_add_interface(varlink_server, &vl_interface_io_systemd_Metrics);
   if (r < 0)
@@ -74,9 +83,19 @@ print_help(void)
 int
 main(int argc, char **argv)
 {
+  _cleanup_(struct_config_free) struct config_t cfg = {false, true, true, true};
+  econf_err error;
+
   int r;
 
   log_init();
+  error = read_config("metrics-exporter", &cfg);
+  if (error != ECONF_SUCCESS && error != ECONF_NOFILE)
+    {
+      log_msg(LOG_NOTICE, "Error reading config file: %s",
+	      econf_errString(error));
+      exit(1);
+    }
 
   while (1)
     {
@@ -99,15 +118,15 @@ main(int argc, char **argv)
       switch (c)
         {
         case 'd':
-          debug_flag = 1;
-	  verbose_flag = 1;
+          cfg.debug = true;
+	  cfg.verbose = true;
           break;
         case '?':
         case 'h':
           print_help();
           return 0;
         case 'v':
-          verbose_flag = 1;
+          cfg.verbose = true;
           break;
         case '\255':
           fprintf(stdout, "metrics-exporter (%s) %s\n", PACKAGE, VERSION);
@@ -127,10 +146,10 @@ main(int argc, char **argv)
       return 1;
     }
 
-  if (verbose_flag)
+  if (cfg.verbose)
     log_msg(LOG_INFO, "Starting metrics-exporter (%s) %s...", PACKAGE, VERSION);
 
-  r = run_varlink();
+  r = run_varlink(&cfg);
   if (r < 0)
     log_msg(LOG_ERR, "ERROR: running varlink failed: %s", strerror(-r));
 

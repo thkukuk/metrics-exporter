@@ -62,7 +62,7 @@ if libselinux.found()
   conf.set('WITH_SELINUX', 1)
 endif
 
-libcommon_c = files('lib/log_msg.c', 'lib/exec_cmd.c')
+libcommon_c = files('lib/log_msg.c', 'lib/exec_cmd.c', 'lib/read_config.c')
 libcommon = static_library(
   'common',
   libcommon_c,
@@ -84,7 +84,7 @@ executable('metrics-exporter',
 
 # Generate config.h
 #subdir('include')
-#subdir('etc')
+subdir('etc')
 subdir('systemd')
 #subdir('man')
 
