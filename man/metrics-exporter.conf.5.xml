@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:id="metrics-exporter.conf">
+  <refmeta>
+    <refentrytitle>metrics-exporter.conf</refentrytitle>
+    <manvolnum>5</manvolnum>
+    <refmiscinfo class="source">metrics-exporter %version%</refmiscinfo>
+    <refmiscinfo class="manual">metrics-exporter.conf</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>metrics-exporter.conf</refname>
+    <refpurpose>configuration file for metrics-exporter</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <para>
+      <filename>/etc/metrics-exporter/metrics-exporter.conf</filename>
+    </para>
+    <para>
+      <filename>/etc/metrics-exporter/metrics-exporter.conf.d/*.conf</filename>
+    </para>
+    <para>
+      <filename>/usr/share/metrics-exporter/metrics-exporter.conf</filename>
+    </para>
+    <para>
+      <filename>/usr/share/metrics-exporter/metrics-exporter.conf.d/*.conf</filename>
+    </para>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para>
+      <filename>metrics-exporter.conf</filename> configures
+      <citerefentry><refentrytitle>metrics-exporter</refentrytitle><manvolnum>8</manvolnum></citerefentry>,
+      the service which exports additional system metrics for
+      <citerefentry><refentrytitle>systemd-report</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Configuration Directories and Precedence</title>
+    <para>
+      The configuration is read following the
+      <link xlink:href="https://uapi-group.org/specifications/specs/configuration_files_specification/">UAPI
+      Configuration Files Specification</link>. The main configuration file
+      <filename>metrics-exporter.conf</filename> is looked up in the
+      <literal>metrics-exporter</literal> namespace below the following
+      directories, listed here from lowest to highest precedence:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term><filename>/usr/share/metrics-exporter/</filename></term>
+        <listitem>
+          <para>
+            Vendor defaults shipped by the distribution package. Files here
+            should not be edited by the administrator, as they may be
+            overwritten on package updates.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><filename>/etc/metrics-exporter/</filename></term>
+        <listitem>
+          <para>
+            Local administrator configuration. Settings here take precedence
+            over the vendor defaults and are the recommended place for local
+            changes.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      In addition to the main configuration file, drop-in files with a
+      <filename>.conf</filename> suffix are read from a
+      <filename>metrics-exporter.conf.d/</filename> directory located next to
+      the main file in each of the directories above (for example
+      <filename>/etc/metrics-exporter/metrics-exporter.conf.d/</filename> and
+      <filename>/usr/share/metrics-exporter/metrics-exporter.conf.d/</filename>).
+    </para>
+    <para>
+      All files are merged into a single configuration.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>File Format</title>
+    <para>
+      The file uses a simple INI-style syntax. It is organized into sections
+      (groups) and
+      <varname>key</varname>=<varname>value</varname> assignments.
+      Everything following a <literal>#</literal> character is treated as a
+      comment and ignored. Leading and trailing whitespace around values are
+      stripped.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Sections</title>
+    <variablelist>
+      <varlistentry>
+        <term><literal>[Global]</literal></term>
+        <listitem>
+          <para>
+            General options controlling the behaviour of
+            <citerefentry><refentrytitle>metrics-exporter</refentrytitle><manvolnum>8</manvolnum></citerefentry>
+            itself.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>[Metrics]</literal></term>
+        <listitem>
+          <para>
+            Options controlling which groups of metrics are exported.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>[SELinux]</literal></term>
+        <listitem>
+          <para>
+            Options specific to the SELinux metrics.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Options in section [Global]</title>
+    <variablelist>
+      <varlistentry>
+        <term><varname>debug</varname></term>
+        <listitem>
+          <para>
+            A boolean value which enables debug mode. Enabling debug mode also
+            enables verbose logging. The built-in default is
+            <option>false</option>. This is equivalent to the
+            <option>--debug</option> command line option.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><varname>verbose</varname></term>
+        <listitem>
+          <para>
+            A boolean value which enables verbose logging. The built-in
+            default is <option>true</option>. This is equivalent to the
+            <option>--verbose</option> command line option.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Options in section [Metrics]</title>
+    <variablelist>
+      <varlistentry>
+        <term><varname>selinux</varname></term>
+        <listitem>
+          <para>
+            A boolean value which controls whether the SELinux metrics are
+            exported at all. The built-in default is <option>true</option>.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Options in section [SELinux]</title>
+    <variablelist>
+      <varlistentry>
+        <term><varname>booleans</varname></term>
+        <listitem>
+          <para>
+            A boolean value which controls whether the state of the SELinux
+            policy booleans is included in the
+            <literal>org.openSUSE.Metrics.SELinux.PolicyBooleans</literal>
+            metric. The built-in default is <option>true</option>. This
+            option has no effect if <varname>selinux</varname> is disabled in
+            the <literal>[Metrics]</literal> section.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Example</title>
+    <example>
+      <title>/etc/metrics-exporter/metrics-exporter.conf</title>
+      <programlisting>
+[Global]
+#debug=false
+verbose=true
+
+[Metrics]
+# SELinux metrics are enabled per default
+selinux=true
+
+[SELinux]
+# Do not report the individual SELinux policy booleans
+booleans=false
+      </programlisting>
+    </example>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>metrics-exporter</refentrytitle><manvolnum>8</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>systemd-report</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+    <para>
+      <link xlink:href="https://uapi-group.org/specifications/specs/configuration_files_specification/">UAPI
+      Configuration Files Specification</link>
+    </para>
+  </refsect1>
+</refentry>

@@ -86,7 +86,7 @@ executable('metrics-exporter',
 #subdir('include')
 subdir('etc')
 subdir('systemd')
-#subdir('man')
+subdir('man')
 
 # Unit tests
 subdir('tests')

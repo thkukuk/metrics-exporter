@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="metrics-exporter">
+  <refmeta>
+    <refentrytitle>metrics-exporter</refentrytitle>
+    <manvolnum>8</manvolnum>
+    <refmiscinfo class="source">metrics-exporter %version%</refmiscinfo>
+    <refmiscinfo class="manual">metrics-exporter</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>metrics-exporter</refname>
+    <refname>metrics-exporter@.service</refname>
+    <refname>metrics-exporter.socket</refname>
+    <refpurpose>export additional metrics for systemd-report</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>metrics-exporter.socket</command>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>metrics-exporter@.service</command>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>/usr/libexec/metrics-exporter</command>
+      <arg choice="opt">OPTIONS</arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para>
+      <command>metrics-exporter</command> is a <citerefentry><refentrytitle>systemd</refentrytitle><manvolnum>1</manvolnum></citerefentry> socket-activated
+      service which collects additional system metrics and provides them via a varlink interface to
+      <citerefentry><refentrytitle>systemd-report</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+    </para>
+    <para>
+      Currently, <command>metrics-exporter</command> provides metrics about the
+      SELinux status of the system, such as whether SELinux is enabled, the
+      running and configured mode, the loaded policy and its version, and the
+      state of the SELinux policy booleans.
+    </para>
+    <para>
+      <command>metrics-exporter@.service</command> is started on demand by
+      <command>metrics-exporter.socket</command> whenever a client connects to
+      the Varlink socket. It is not meant to be started or enabled manually.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+        <term><option>-d</option></term>
+        <term><option>--debug</option></term>
+        <listitem>
+          <para>Enable debug mode. This implies <option>--verbose</option>.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-v</option></term>
+        <term><option>--verbose</option></term>
+        <listitem>
+          <para>Enable verbose logging.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-?</option></term>
+        <term><option>--help</option></term>
+        <listitem>
+          <para>Give the help list.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <para>Print program version.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Varlink Interface</title>
+    <para>
+      <command>metrics-exporter</command> implements the
+      <literal>io.systemd.Metrics</literal> Varlink interface, the same
+      interface <citerefentry><refentrytitle>systemd</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+      itself uses to export its own metrics. It is reachable through the
+      socket <filename>/run/systemd/report/org.openSUSE.Metrics</filename>,
+      which is created by <command>metrics-exporter.socket</command>.
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term><function>List</function></term>
+        <listitem>
+          <para>
+            Returns the current value of every metric provided by
+            <command>metrics-exporter</command>.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><function>Describe</function></term>
+        <listitem>
+          <para>
+            Returns the name, description and type (<literal>counter</literal>,
+            <literal>gauge</literal>, <literal>string</literal> or
+            <literal>object</literal>) of every metric family provided by
+            <command>metrics-exporter</command>.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      All metric names use the <literal>org.openSUSE.Metrics</literal> prefix.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Metrics</title>
+    <para>
+      The following metric families are currently provided:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.Version</literal></term>
+        <listitem>
+          <para>Version of the running <command>metrics-exporter</command>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.Status</literal></term>
+        <listitem>
+          <para>Whether SELinux is <literal>enabled</literal> or <literal>disabled</literal>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.Mode</literal></term>
+        <listitem>
+          <para>The currently running SELinux mode, <literal>permissive</literal> or <literal>enforcing</literal>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.ConfigfileMode</literal></term>
+        <listitem>
+          <para>The SELinux mode configured in <filename>/etc/selinux/config</filename>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.RootDir</literal></term>
+        <listitem>
+          <para>The SELinux root directory.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.Policy</literal></term>
+        <listitem>
+          <para>The name of the loaded SELinux policy.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.PolicyMLS</literal></term>
+        <listitem>
+          <para>Whether the loaded policy has MLS support <literal>enabled</literal> or <literal>disabled</literal>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.PolicyDenyUnknown</literal></term>
+        <listitem>
+          <para>Whether unknown permissions are <literal>allowed</literal> or <literal>denied</literal> by the loaded policy.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.CheckReqProt</literal></term>
+        <listitem>
+          <para>The memory protection checking mode enforced by the kernel.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.MaxKernelPolicyVersion</literal></term>
+        <listitem>
+          <para>The maximum SELinux policy version supported by the running kernel.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.PolicyRPMVersion</literal></term>
+        <listitem>
+          <para>Name, version, release and architecture of the installed <literal>selinux-policy</literal> package.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.SELinux.PolicyBooleans</literal></term>
+        <listitem>
+          <para>
+            The current state (<literal>on</literal> or <literal>off</literal>) of every
+            SELinux policy boolean, one metric object per boolean. If the pending
+            value of a boolean differs from its active value, an additional
+            <literal>pending</literal> field is reported.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      The SELinux metrics are only reported if SELinux support was compiled
+      into <command>metrics-exporter</command> and can be disabled or
+      restricted via <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Configuration</title>
+    <para>
+      <command>metrics-exporter</command> reads its configuration from
+      <filename>metrics-exporter.conf</filename>. See
+      <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+      for a description of the file format and the recognized options.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Files</title>
+    <variablelist>
+      <varlistentry>
+        <term><filename>/usr/libexec/metrics-exporter</filename></term>
+        <listitem>
+          <para>The daemon binary.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><filename>/run/systemd/report/org.openSUSE.Metrics</filename></term>
+        <listitem>
+          <para>The Varlink socket created by <command>metrics-exporter.socket</command>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><filename>/etc/metrics-exporter/metrics-exporter.conf</filename></term>
+        <listitem>
+          <para>The local administrator configuration file.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><filename>/usr/share/metrics-exporter/metrics-exporter.conf</filename></term>
+        <listitem>
+          <para>The vendor default configuration file.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>systemd</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>systemd.socket</refentrytitle><manvolnum>5</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>systemd.service</refentrytitle><manvolnum>5</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>systemd-report</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>varlinkctl</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>
