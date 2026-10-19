@@ -15,6 +15,21 @@ struct_config_free(config_t _unused_(*cfg))
   return NULL;
 }
 
+
+static econf_err
+get_bool_value(econf_file *key_file, const char *group, const char *key, bool *result)
+{
+  // XXX Use getStringValue and check for true/false/on/off/enabled/disabled/...
+  econf_err error = econf_getBoolValue(key_file, group, key, result);
+
+  if (error == ECONF_SUCCESS || error == ECONF_NOFILE ||
+      error == ECONF_NOGROUP || error == ECONF_NOKEY)
+    return ECONF_SUCCESS;
+
+  return error;
+}
+
+
 /* we will read everything and only report the first error */
 econf_err
 read_config(const char *name, config_t *cfg)
@@ -34,24 +49,23 @@ read_config(const char *name, config_t *cfg)
   if (error != ECONF_SUCCESS)
     return error;
 
-  error = econf_getBoolValue(key_file, "[Global]", "verbose", &(cfg->verbose));
-  if (error != ECONF_SUCCESS && error != ECONF_NOGROUP)
+  error = get_bool_value(key_file, "[Global]", "verbose", &(cfg->verbose));
+  if (error)
     return error;
-  error = econf_getBoolValue(key_file, "[Global]", "debug", &(cfg->debug));
+  error = get_bool_value(key_file, "[Global]", "debug", &(cfg->debug));
   if (error)
     return error;
   // if debug is enabled, also print verbose messages
   if (cfg->debug)
     cfg->verbose = true;
 
-  error = econf_getBoolValue(key_file, "[Metrics]", "selinux", &(cfg->selinux));
-  if (error != ECONF_SUCCESS && error != ECONF_NOGROUP)
+  error = get_bool_value(key_file, "[Metrics]", "selinux", &(cfg->selinux));
+  if (error)
     return error;
 
-  error = econf_getBoolValue(key_file, "[SELinux]", "booleans", &(cfg->selinux_booleans));
-  if (error != ECONF_SUCCESS && error != ECONF_NOGROUP)
+  error = get_bool_value(key_file, "[SELinux]", "booleans", &(cfg->selinux_booleans));
+  if (error)
     return error;
-
 
   return ECONF_SUCCESS;
 }
