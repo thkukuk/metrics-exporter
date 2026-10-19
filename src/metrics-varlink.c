@@ -7,12 +7,13 @@
 #include <string.h>
 #include <systemd/sd-json.h>
 #include <systemd/sd-varlink.h>
-#include "selinux-metrics.h"
 
 #include "basics.h"
 #include "log_msg.h"
 #include "read_config.h"
 #include "metrics-varlink.h"
+#include "network-metrics.h"
+#include "selinux-metrics.h"
 #include "varlink-io.systemd.Metrics.h"
 
 
@@ -83,19 +84,10 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
 		      const char *name, const char *version,
 		      const char *release, const char *arch)
 {
-  _cleanup_free_ char *value_str = NULL;
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *value = NULL;
-  _cleanup_(sd_json_variant_unrefp) sd_json_variant *fields = NULL;
   int r;
 
-  if (asprintf(&value_str, "%s-%s", version, release) < 0)
-    return -ENOMEM;
-
-  r = sd_json_variant_new_string(&value, value_str);
-  if (r < 0)
-    return r;
-
-  r = sd_json_buildo(&fields,
+  r = sd_json_buildo(&value,
 		     SD_JSON_BUILD_PAIR_STRING("name", name),
 		     SD_JSON_BUILD_PAIR_STRING("version", version),
 		     SD_JSON_BUILD_PAIR_STRING("release", release),
@@ -103,7 +95,7 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
   if (r < 0)
     return r;
 
-  return metric_build_send(mf, link, name, value, fields);
+  return metric_build_send(mf, link, name, value, NULL);
 }
 
 static int
@@ -153,6 +145,10 @@ vl_method_metrics_describe(sd_varlink *link, sd_json_variant *parameters,
 	return r;
     }
 
+  r = network_metrics_describe(link);
+  if (r < 0)
+    return r;
+
   r = selinux_metrics_describe(link);
   if (r < 0)
     return r;
@@ -186,10 +182,20 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
 	}
     }
 
+
+  if (cfg->network)
+    {
+      r = network_metrics_list(link);
+      if (r < 0)
+	return r;
+    }
+
   if (cfg->selinux)
-    r = selinux_metrics_list(link, cfg->selinux_booleans);
-  if (r < 0)
-    return r;
+    {
+      r = selinux_metrics_list(link, cfg->selinux_booleans);
+      if (r < 0)
+	return r;
+    }
 
   return 0;
 }

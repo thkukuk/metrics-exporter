@@ -72,7 +72,8 @@ libcommon = static_library(
 
 metrics_exporter_c = ['src/metrics-exporter.c',
                       'src/varlink-io.systemd.Metrics.c',
-                      'src/metrics-varlink.c', 'src/selinux-metrics.c']
+                      'src/metrics-varlink.c', 'src/selinux-metrics.c',
+                      'src/network-metrics.c']
 
 executable('metrics-exporter',
            metrics_exporter_c,

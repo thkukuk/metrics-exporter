@@ -83,7 +83,7 @@ print_help(void)
 int
 main(int argc, char **argv)
 {
-  _cleanup_(struct_config_free) struct config_t cfg = {false, true, true, true};
+  _cleanup_(struct_config_free) struct config_t cfg = {false, true, true, true, true};
   econf_err error;
 
   int r;
