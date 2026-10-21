@@ -61,6 +61,10 @@ libselinux = dependency('libselinux', required: get_option('selinux'))
 if libselinux.found()
   conf.set('WITH_SELINUX', 1)
 endif
+libnm = dependency('libnm', required: get_option('libnm'))
+if libnm.found()
+  conf.set('WITH_NETWORK_MANAGER', 1)
+endif
 
 libcommon_c = files('lib/log_msg.c', 'lib/exec_cmd.c', 'lib/read_config.c')
 libcommon = static_library(
@@ -79,7 +83,7 @@ executable('metrics-exporter',
            metrics_exporter_c,
            include_directories : inc,
 	   link_with : [libcommon],
-           dependencies : [libeconf, libsystemd, libselinux],
+           dependencies : [libeconf, libsystemd, libselinux, libnm],
            install : true,
 	   install_dir: libexecdir)
 

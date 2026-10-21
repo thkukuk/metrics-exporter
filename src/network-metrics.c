@@ -7,11 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ifaddrs.h>
+#include <net/if.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <systemd/sd-json.h>
 #include <systemd/sd-varlink.h>
+#ifdef WITH_NETWORK_MANAGER
+#include <NetworkManager.h>
+#endif
 
 #include "basics.h"
 #include "log_msg.h"
@@ -47,6 +51,23 @@ freeifaddrsp(struct ifaddrs **ifaddr)
 {
   if (*ifaddr)
     freeifaddrs(*ifaddr);
+  *ifaddr = NULL;
+}
+
+static inline void
+freeifnameindexp(struct if_nameindex **if_ni)
+{
+  if (*if_ni)
+    if_freenameindex(*if_ni);
+  *if_ni = NULL;
+}
+
+static inline void
+freeNMClientp(NMClient **client)
+{
+  if (*client)
+    g_object_unref(*client);
+  *client = NULL;
 }
 
 static int
@@ -83,7 +104,7 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 
 	  if (family == AF_INET)
 	    {
-	      struct sockaddr_in *sa = (struct sockaddr_in *)ifa->ifa_addr;
+	      struct sockaddr_in *sa = (struct sockaddr_in *)(void *)ifa->ifa_addr;
 	      uint32_t addr = ntohl(sa->sin_addr.s_addr);
 
 	      // 127.0.0.0/8 is host (loopback) scope
@@ -95,11 +116,11 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 
 	      // Convert IP to string
 	      inet_ntop(AF_INET, &(sa->sin_addr), addr_str, sizeof(addr_str));
-	      prefixlen = ipv4_netmask_to_prefixlen((struct sockaddr_in *)ifa->ifa_netmask);
+	      prefixlen = ipv4_netmask_to_prefixlen((struct sockaddr_in *)(void *)ifa->ifa_netmask);
 	    }
 	  else
 	    {
-	      struct sockaddr_in6 *sa = (struct sockaddr_in6 *)ifa->ifa_addr;
+	      struct sockaddr_in6 *sa = (struct sockaddr_in6 *)(void *)ifa->ifa_addr;
 
 	      // Use built-in netinet macros to determine IPv6 scope
 	      if (IN6_IS_ADDR_LOOPBACK(&sa->sin6_addr))
@@ -112,21 +133,20 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 
 	      // Convert IP to string
 	      inet_ntop(AF_INET6, &(sa->sin6_addr), addr_str, sizeof(addr_str));
-	      prefixlen = ipv6_netmask_to_prefixlen((struct sockaddr_in6 *)ifa->ifa_netmask);
+	      prefixlen = ipv6_netmask_to_prefixlen((struct sockaddr_in6 *)(void *)ifa->ifa_netmask);
             }
 
 	  if (asprintf(&cidr_str, "%s/%u", addr_str, prefixlen) < 0)
 	    return -ENOMEM;
 
-	  r = sd_json_buildo(
-			     &fields,
+	  r = sd_json_buildo(&fields,
 			     SD_JSON_BUILD_PAIR_STRING("family", family_str),
 			     SD_JSON_BUILD_PAIR_STRING("scope", scope_str));
-              if (r < 0)
-                {
-                  log_msg(LOG_ERR, "Failed to build metric fields: %s", strerror(-r));
-                  return r;
-                }
+	  if (r < 0)
+	    {
+	      log_msg(LOG_ERR, "Failed to build metric fields: %s", strerror(-r));
+	      return r;
+	    }
 
 	  r = metric_build_send_string(mf, link, ifa->ifa_name, cidr_str, fields);
 	  if (r < 0)
@@ -138,50 +158,138 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_network_address_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
+metrics_network_device_state_generate(const MetricFamily *mf, sd_varlink *link)
 {
+#ifdef WITH_NETWORK_MANAGER
+  _cleanup_(freeifnameindexp) struct if_nameindex *if_ni = NULL;
+  _cleanup_(freeNMClientp) NMClient *client = NULL;
+  GError *error = NULL;
+  int r;
+
+  client = nm_client_new(NULL, &error);
+  if (!client)
+    {
+      log_msg(LOG_ERR, "Could not connect to NetworkManager: %s", error->message);
+      g_error_free(error);
+      return -ECONNREFUSED;
+    }
+
+  if_ni = if_nameindex();
+  if (!if_ni)
+    {
+      r = -errno;
+      log_msg(LOG_ERR, "if_nameindex failed: %s", strerror(-r));
+      return r;
+    }
+
+  for (struct if_nameindex *ifni = if_ni; ifni->if_index != 0; ifni++)
+    {
+      _cleanup_(sd_json_variant_unrefp) sd_json_variant *fields = NULL;
+      const char *state_str;
+
+      // Interfaces NetworkManager doesn't know about are reported as unmanaged
+      NMDevice *device = nm_client_get_device_by_iface(client, ifni->if_name);
+      NMDeviceState state = device ? nm_device_get_state(device) : NM_DEVICE_STATE_UNMANAGED;
+
+      switch (state)
+	{
+        case NM_DEVICE_STATE_UNKNOWN:
+	  state_str = "Unknown";
+	  break;
+        case NM_DEVICE_STATE_UNMANAGED:
+	  state_str = "Unmanaged";
+	  break;
+        case NM_DEVICE_STATE_UNAVAILABLE:
+	  state_str = "Unavailable";
+	  break;
+        case NM_DEVICE_STATE_DISCONNECTED:
+	  state_str = "Disconnected";
+	  break;
+        case NM_DEVICE_STATE_PREPARE:
+	  state_str = "Preparing";
+	  break;
+        case NM_DEVICE_STATE_CONFIG:
+	  state_str = "Configuring";
+	  break;
+        case NM_DEVICE_STATE_NEED_AUTH:
+	  state_str = "Need Authentication";
+	  break;
+        case NM_DEVICE_STATE_IP_CONFIG:
+	  state_str = "Requesting IP Configuration";
+	  break;
+        case NM_DEVICE_STATE_IP_CHECK:
+	  state_str = "Checking IP Connectivity";
+	  break;
+        case NM_DEVICE_STATE_SECONDARIES:
+	  state_str = "Waiting for Secondary Connections";
+	  break;
+        case NM_DEVICE_STATE_ACTIVATED:
+	  state_str = "Activated (Connected)";
+	  break;
+        case NM_DEVICE_STATE_DEACTIVATING:
+	  state_str = "Deactivating";
+	  break;
+        case NM_DEVICE_STATE_FAILED:
+	  state_str = "Failed";
+	  break;
+        default:
+	  state_str = "Unrecognized State";
+	  break;
+	}
+
+      r = sd_json_buildo(&fields,
+			 SD_JSON_BUILD_PAIR_INTEGER("state", state));
+      if (r < 0)
+	{
+	  log_msg(LOG_ERR, "Failed to build metric fields: %s", strerror(-r));
+	  return r;
+	}
+
+      r = metric_build_send_string(mf, link, ifni->if_name, state_str, fields);
+      if (r < 0)
+	return r;
+    }
+#endif
+
   return 0;
 }
 
 static int
-metrics_network_admin_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
+metrics_network_managed_interfaces_generate(const MetricFamily *mf, sd_varlink *link)
 {
-  return 0;
-}
+#ifdef WITH_NETWORK_MANAGER
+  _cleanup_(freeNMClientp) NMClient *client = NULL;
+  const GPtrArray *devices;
+  GError *error = NULL;
+  unsigned int managed = 0;
+  int r;
 
-static int
-metrics_network_carrier_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
-  return 0;
-}
+  client = nm_client_new(NULL, &error);
+  if (!client)
+    {
+      log_msg(LOG_ERR, "Could not connect to NetworkManager: %s", error->message);
+      g_error_free(error);
+      return -ECONNREFUSED;
+    }
 
-static int
-metrics_network_ipv4_address_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
-  return 0;
-}
+  devices = nm_client_get_devices(client);
+  if (devices)
+    {
+      for (guint i = 0; i < devices->len; i++)
+	{
+	  NMDevice *device = g_ptr_array_index(devices, i);
 
-static int
-metrics_network_ipv6_address_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
-  return 0;
-}
+	  // Check if the device is currently managed by NM
+	  if (nm_device_get_managed(device))
+	    managed++;
+        }
+    }
 
-static int
-metrics_network_managed_interfaces_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
-  return 0;
-}
+  r = metric_build_send_unsigned(mf, link, NULL, managed, NULL);
+  if (r < 0)
+    return r;
+#endif
 
-static int
-metrics_network_operational_state_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
-  return 0;
-}
-
-static int
-metrics_network_for_online_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
-{
   return 0;
 }
 
@@ -193,52 +301,16 @@ static const MetricFamily network_metric_family_table[] = {
     .generate = metrics_network_address_generate,
   },
   {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.AddressState",
-    .description = "Per interface metric: address state",
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.DeviceState",
+    .description = "Per interface metric: state of network device",
     .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_address_state_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.AdministrativeState",
-    .description = "Per interface metric: administrative state",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_admin_state_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.CarrierState",
-    .description = "Per interface metric: carrier state",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_carrier_state_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.IPv4AddressState",
-    .description = "Per interface metric: IPv4 address state",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_ipv4_address_state_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.IPv6AddressState",
-    .description = "Per interface metric: IPv6 address state",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_ipv6_address_state_generate,
+    .generate = metrics_network_device_state_generate,
   },
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.ManagedInterfaces",
     .description = "Number of network interfaces managed by systemd-networkd",
     .type = METRIC_FAMILY_TYPE_GAUGE,
     .generate = metrics_network_managed_interfaces_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.OperationalState",
-    .description = "Per interface metric: operational state",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_operational_state_generate,
-  },
-  {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "Network.RequiredForOnline",
-    .description = "Per interface metric: required operational state for online, or 'no' if not required",
-    .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_network_for_online_generate,
   },
   {}
 };
