@@ -157,6 +157,15 @@
     <title>Options in section [Metrics]</title>
     <variablelist>
       <varlistentry>
+        <term><varname>network</varname></term>
+        <listitem>
+          <para>
+            A boolean value which controls whether the network metrics are
+            exported at all. The built-in default is <option>true</option>.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><varname>selinux</varname></term>
         <listitem>
           <para>
@@ -197,7 +206,8 @@
 verbose=true
 
 [Metrics]
-# SELinux metrics are enabled per default
+# Network and SELinux metrics are enabled per default
+network=true
 selinux=true
 
 [SELinux]

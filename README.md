@@ -5,10 +5,7 @@ socket-activated service which collects additional system metrics and
 provides them via a `varlink` interface to
 [systemd-report](https://www.freedesktop.org/software/systemd/man/latest/systemd-report.html).
 
-Currently, `metrics-exporter` provides metrics about the SELinux status of
-the system, such as whether SELinux is enabled, the running and configured
-mode, the loaded policy and its version, and the state of the SELinux
-policy booleans.
+It provides metrics about SELinux and the network using NetworkManager.
 
 `metrics-exporter@.service` is started on demand by `metrics-exporter.socket`
 whenever a client connects to the Varlink socket. It is not meant to be
@@ -35,7 +32,7 @@ Alternative: this socket will be auto-activated if
 ## Varlink Interface
 
 `metrics-exporter` implements the `io.systemd.Metrics` Varlink interface,
-the interface `systemd-report` uses to query the different services for 
+the interface `systemd-report` uses to query the different services for
 their metrics. It is reachable through the socket
 `/run/systemd/report/org.openSUSE.Metrics`, which is created by
 `metrics-exporter.socket`.
@@ -54,6 +51,9 @@ The following metric families are currently provided:
 | Metric | Description |
 | --- | --- |
 | `org.openSUSE.Metrics.Version` | Version of the running `metrics-exporter`. |
+| `org.openSUSE.Metrics.Network.Address` | Per interface metric: configured IP address in CIDR notation, with `family` (`ipv4` or `ipv6`) and `scope` (`global`, `link` or `site`) fields. Loopback addresses are not reported. |
+| `org.openSUSE.Metrics.Network.DeviceState` | Per interface metric: state of the network device as seen by `NetworkManager` (for example `Activated (Connected)`, `Disconnected` or `Unmanaged`), with the corresponding numeric NetworkManager device state in the `state` field. Only available if `metrics-exporter` was built with `NetworkManager` support. |
+| `org.openSUSE.Metrics.Network.ManagedInterfaces` | The number of network interfaces currently managed by `NetworkManager`. Only available if `metrics-exporter` was built with `NetworkManager` support. |
 | `org.openSUSE.Metrics.SELinux.Status` | Whether SELinux is `enabled` or `disabled`. |
 | `org.openSUSE.Metrics.SELinux.Mode` | The currently running SELinux mode, `permissive` or `enforcing`. |
 | `org.openSUSE.Metrics.SELinux.ConfigfileMode` | The SELinux mode configured in `/etc/selinux/config`. |
@@ -69,6 +69,12 @@ The following metric families are currently provided:
 The SELinux metrics are only reported if SELinux support was compiled into
 `metrics-exporter`. It can be disabled or restricted via
 `metrics-exporter.conf` (see [Configuration](#configuration) below).
+
+The network metrics can be disabled entirely via `metrics-exporter.conf`
+(see [Configuration](#configuration) below). The
+`org.openSUSE.Metrics.Network.DeviceState` and
+`org.openSUSE.Metrics.Network.ManagedInterfaces` metrics are only reported
+if `metrics-exporter` was built with `NetworkManager` support.
 
 ## Configuration
 
@@ -121,6 +127,7 @@ values are stripped.
 
 | Option | Description |
 | --- | --- |
+| `network` | A boolean value which controls whether the network metrics are exported at all. The built-in default is `true`. |
 | `selinux` | A boolean value which controls whether the SELinux metrics are exported at all. The built-in default is `true`. |
 
 #### `[SELinux]`
@@ -139,7 +146,8 @@ values are stripped.
 verbose=true
 
 [Metrics]
-# SELinux metrics are enabled per default
+# Network and SELinux metrics are enabled per default
+network=true
 selinux=true
 
 [SELinux]

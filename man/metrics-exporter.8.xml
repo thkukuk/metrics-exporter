@@ -38,7 +38,10 @@
       Currently, <command>metrics-exporter</command> provides metrics about the
       SELinux status of the system, such as whether SELinux is enabled, the
       running and configured mode, the loaded policy and its version, and the
-      state of the SELinux policy booleans.
+      state of the SELinux policy booleans. It also provides metrics about
+      the network configuration, such as the configured IP addresses, the
+      state of the network devices and the number of interfaces managed by
+      <command>NetworkManager</command>.
     </para>
     <para>
       <command>metrics-exporter@.service</command> is started on demand by
@@ -133,6 +136,48 @@
         </listitem>
       </varlistentry>
       <varlistentry>
+        <term><literal>org.openSUSE.Metrics.Network.Address</literal></term>
+        <listitem>
+          <para>
+            Per interface metric reporting a configured IP address in CIDR
+            notation. Every address of an interface is reported as a
+            separate metric object, with <literal>family</literal>
+            (<literal>ipv4</literal> or <literal>ipv6</literal>) and
+            <literal>scope</literal> (<literal>global</literal>,
+            <literal>link</literal> or <literal>site</literal>) fields.
+            Loopback addresses are not reported.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.Network.DeviceState</literal></term>
+        <listitem>
+          <para>
+            Per interface metric reporting the state of a network device as
+            seen by <command>NetworkManager</command> (for example
+            <literal>Activated (Connected)</literal>,
+            <literal>Disconnected</literal> or <literal>Unmanaged</literal>),
+            together with the corresponding numeric NetworkManager device
+            state in the <literal>state</literal> field. Interfaces not known
+            to <command>NetworkManager</command> are reported as
+            <literal>Unmanaged</literal>. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <command>NetworkManager</command> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.Network.ManagedInterfaces</literal></term>
+        <listitem>
+          <para>
+            The number of network interfaces currently managed by
+            <command>NetworkManager</command>. This metric is only available
+            if <command>metrics-exporter</command> was built with
+            <command>NetworkManager</command> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><literal>org.openSUSE.Metrics.SELinux.Status</literal></term>
         <listitem>
           <para>Whether SELinux is <literal>enabled</literal> or <literal>disabled</literal>.</para>
@@ -208,6 +253,14 @@
       The SELinux metrics are only reported if SELinux support was compiled
       into <command>metrics-exporter</command> and can be disabled or
       restricted via <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
+    </para>
+    <para>
+      The network metrics can be disabled entirely via
+      <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
+      The <literal>org.openSUSE.Metrics.Network.DeviceState</literal> and
+      <literal>org.openSUSE.Metrics.Network.ManagedInterfaces</literal>
+      metrics are only reported if <command>metrics-exporter</command> was
+      built with <command>NetworkManager</command> support.
     </para>
   </refsect1>
 
