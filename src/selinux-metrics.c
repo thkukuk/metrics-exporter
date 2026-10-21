@@ -10,10 +10,17 @@
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
 #endif
+#ifdef WITH_LIBRPM
+#include <rpm/rpmlib.h>
+#include <rpm/rpmts.h>
+#include <rpm/rpmdb.h>
+#include <rpm/header.h>
+#else
+#include "exec_cmd.h"
+#endif
 
 #include "basics.h"
 #include "log_msg.h"
-#include "exec_cmd.h"
 #include "metrics-varlink.h"
 #include "selinux-metrics.h"
 
@@ -237,11 +244,68 @@ static int
 metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *link)
 {
 #ifdef WITH_SELINUX
-  _cleanup_free_ char *rpm_info = NULL;
-  char *version, *release, *arch;
+  const char *pkg_name = "selinux-policy";
   int r;
 
-  r = exec_cmd(&rpm_info, "rpm", "rpm", "-q", "--qf", "%{VERSION} %{RELEASE} %{ARCH}", "selinux-policy", NULL);
+  if (!is_selinux_enabled())
+    return 0;
+
+#ifdef WITH_LIBRPM
+  if (rpmReadConfigFiles(NULL, NULL) != 0)
+    {
+      log_msg(LOG_ERR, "Failed to read RPM configuration");
+      return 0; // XXX error code?
+    }
+
+  rpmts ts = rpmtsCreate();
+  rpmdbMatchIterator iter = rpmtsInitIterator(ts, RPMDBI_NAME, pkg_name, 0);
+
+  if (iter == NULL)
+    {
+      log_msg(LOG_ERR, "Failed to initialize RPM database iterator");
+      rpmtsFree(ts);
+      return 0; // XXX error code?
+    }
+
+  Header h;
+  int found = 0;
+
+  // Iterate over all installed instances of the package
+  while ((h = rpmdbNextIterator(iter)) != NULL)
+    {
+      const char *version, *release, *arch, *epoch;
+      found = 1;
+
+      version = headerGetString(h, RPMTAG_VERSION);
+      release = headerGetString(h, RPMTAG_RELEASE);
+      arch = headerGetString(h, RPMTAG_ARCH);
+      epoch = headerGetString(h, RPMTAG_EPOCH);
+
+      r = metric_build_send_rpm(mf, link, pkg_name, strna(version), strempty(release), strempty(arch), epoch);
+      if (r < 0)
+	break;
+    }
+  rpmdbFreeIterator(iter);
+  rpmtsFree(ts);
+
+  if (r == 0 && !found)
+    {
+      log_msg(LOG_ERR, "Package '%s' is not installed", pkg_name);
+      return -ENOENT;
+    }
+
+  return r;
+
+#else
+  /*
+    XXX two problems:
+    1. selinux-policy could be installed several times with different versions
+    2. epoch field is ignored
+  */
+  char *version = NULL, *release = NULL, *arch = NULL;
+  _cleanup_free_ char *rpm_info = NULL;
+
+  r = exec_cmd(&rpm_info, "rpm", "rpm", "-q", "--qf", "%{VERSION} %{RELEASE} %{ARCH}", pkg_name, NULL);
   if (r < 0)
     {
       log_msg(LOG_ERR, "exec_cmd(rpm -q --qf...) failed: %s", strerror(-r));
@@ -257,7 +321,8 @@ metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *
   release = strtok(NULL, " ");
   arch    = strtok(NULL, " ");
 
-  return metric_build_send_rpm(mf, link, "selinux-policy", strna(version), strempty(release), strempty(arch));
+  return = metric_build_send_rpm(mf, link, pkg_name, strna(version), strempty(release), strempty(arch), NULL);
+#endif
 #else
   return 0;
 #endif

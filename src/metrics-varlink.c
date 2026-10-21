@@ -82,7 +82,8 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
 int
 metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
 		      const char *name, const char *version,
-		      const char *release, const char *arch)
+		      const char *release, const char *arch,
+		      const char *epoch)
 {
   _cleanup_free_ char *value_str = NULL;
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *value = NULL;
@@ -100,7 +101,9 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
 		     SD_JSON_BUILD_PAIR_STRING("name", name),
 		     SD_JSON_BUILD_PAIR_STRING("version", version),
 		     SD_JSON_BUILD_PAIR_STRING("release", release),
-		     SD_JSON_BUILD_PAIR_STRING("arch", arch));
+		     SD_JSON_BUILD_PAIR_STRING("arch", arch),
+		     SD_JSON_BUILD_PAIR_CONDITION(!isempty(epoch), "epoch",
+					SD_JSON_BUILD_STRING(epoch)));
   if (r < 0)
     return r;
 

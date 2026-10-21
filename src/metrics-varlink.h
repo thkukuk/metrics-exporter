@@ -35,7 +35,8 @@ extern int metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
 				      sd_json_variant *fields);
 extern int metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
 				 const char *name, const char *version,
-				 const char *release, const char *arch);
+				 const char *release, const char *arch,
+				 const char *epoch);
 
 extern int vl_method_metrics_describe(sd_varlink *link,
 	       			      sd_json_variant *parameters,
