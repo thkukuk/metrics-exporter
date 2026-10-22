@@ -83,7 +83,8 @@ print_help(void)
 int
 main(int argc, char **argv)
 {
-  _cleanup_(struct_config_free) struct config_t cfg = {false, true, true, true, true};
+  // list of installed packages is by default disabled
+  _cleanup_(struct_config_free) struct config_t cfg = {false, true, true, false, true, true};
   econf_err error;
 
   int r;

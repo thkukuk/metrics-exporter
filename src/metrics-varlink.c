@@ -13,6 +13,7 @@
 #include "read_config.h"
 #include "metrics-varlink.h"
 #include "network-metrics.h"
+#include "packages-metrics.h"
 #include "selinux-metrics.h"
 #include "varlink-io.systemd.Metrics.h"
 
@@ -80,17 +81,17 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
 }
 
 int
-metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
-		      const char *name, const char *version,
-		      const char *release, const char *arch,
-		      const char *epoch)
+metric_build_send_package(const MetricFamily *mf, sd_varlink *link,
+			  const char *name, const char *version,
+			  const char *release, const char *arch,
+			  uint32_t epoch)
 {
   _cleanup_free_ char *value_str = NULL;
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *value = NULL;
   _cleanup_(sd_json_variant_unrefp) sd_json_variant *fields = NULL;
   int r;
 
-  if (asprintf(&value_str, "%s-%s", version, release) < 0)
+  if (asprintf(&value_str, "%u:%s-%s.%s", epoch, version, release, arch) < 0)
     return -ENOMEM;
 
   r = sd_json_variant_new_string(&value, value_str);
@@ -98,12 +99,11 @@ metric_build_send_rpm(const MetricFamily *mf, sd_varlink *link,
     return r;
 
   r = sd_json_buildo(&fields,
-		     SD_JSON_BUILD_PAIR_STRING("name", name),
 		     SD_JSON_BUILD_PAIR_STRING("version", version),
 		     SD_JSON_BUILD_PAIR_STRING("release", release),
 		     SD_JSON_BUILD_PAIR_STRING("arch", arch),
-		     SD_JSON_BUILD_PAIR_CONDITION(!isempty(epoch), "epoch",
-					SD_JSON_BUILD_STRING(epoch)));
+		     SD_JSON_BUILD_PAIR_CONDITION(epoch!=0, "epoch",
+					  SD_JSON_BUILD_UNSIGNED(epoch)));
   if (r < 0)
     return r;
 
@@ -165,6 +165,10 @@ vl_method_metrics_describe(sd_varlink *link, sd_json_variant *parameters,
   if (r < 0)
     return r;
 
+  r = packages_metrics_describe(link);
+  if (r < 0)
+    return r;
+
   return 0;
 }
 
@@ -205,6 +209,13 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
   if (cfg->selinux)
     {
       r = selinux_metrics_list(link, cfg->selinux_booleans);
+      if (r < 0)
+	return r;
+    }
+
+  if (cfg->packages)
+    {
+      r = packages_metrics_list(link);
       if (r < 0)
 	return r;
     }

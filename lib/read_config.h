@@ -8,6 +8,7 @@ typedef struct config_t {
   bool debug;
   bool verbose;
   bool network;
+  bool packages;
   bool selinux;
   bool selinux_booleans;
 } config_t;

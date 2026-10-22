@@ -166,6 +166,17 @@
         </listitem>
       </varlistentry>
       <varlistentry>
+        <term><varname>packages</varname></term>
+        <listitem>
+          <para>
+            A boolean value which controls whether the
+            <literal>org.openSUSE.Metrics.Packages</literal> metric, listing
+            every installed RPM package, is exported. The built-in default is
+            <option>false</option>.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><varname>selinux</varname></term>
         <listitem>
           <para>
@@ -209,6 +220,8 @@ verbose=true
 # Network and SELinux metrics are enabled per default
 network=true
 selinux=true
+# Listing installed packages is disabled per default
+packages=false
 
 [SELinux]
 # Do not report the individual SELinux policy booleans

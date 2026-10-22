@@ -41,7 +41,8 @@
       state of the SELinux policy booleans. It also provides metrics about
       the network configuration, such as the configured IP addresses, the
       state of the network devices and the number of interfaces managed by
-      <command>NetworkManager</command>.
+      <command>NetworkManager</command>, as well as a metric listing every
+      installed RPM package.
     </para>
     <para>
       <command>metrics-exporter@.service</command> is started on demand by
@@ -248,6 +249,22 @@
           </para>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.Packages</literal></term>
+        <listitem>
+          <para>
+            Per package metric reporting an installed RPM package. Every
+            installed package is reported as a separate metric object named
+            after the package, with the value
+            <literal>epoch:version-release.arch</literal> and
+            <literal>version</literal>, <literal>release</literal>,
+            <literal>arch</literal> and (if non-zero) <literal>epoch</literal>
+            fields. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <literal>librpm</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
     </variablelist>
     <para>
       The SELinux metrics are only reported if SELinux support was compiled
@@ -261,6 +278,13 @@
       <literal>org.openSUSE.Metrics.Network.ManagedInterfaces</literal>
       metrics are only reported if <command>metrics-exporter</command> was
       built with <command>NetworkManager</command> support.
+    </para>
+    <para>
+      The <literal>org.openSUSE.Metrics.Packages</literal> metric is disabled
+      by default, since it lists every installed package, and can be enabled
+      via <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
+      It is only reported if <command>metrics-exporter</command> was built
+      with <literal>librpm</literal> support.
     </para>
   </refsect1>
 

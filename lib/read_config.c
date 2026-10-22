@@ -63,6 +63,10 @@ read_config(const char *name, config_t *cfg)
   if (error)
     return error;
 
+  error = get_bool_value(key_file, "[Metrics]", "packages", &(cfg->packages));
+  if (error)
+    return error;
+
   error = get_bool_value(key_file, "[Metrics]", "selinux", &(cfg->selinux));
   if (error)
     return error;

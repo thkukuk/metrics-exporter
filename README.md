@@ -5,7 +5,8 @@ socket-activated service which collects additional system metrics and
 provides them via a `varlink` interface to
 [systemd-report](https://www.freedesktop.org/software/systemd/man/latest/systemd-report.html).
 
-It provides metrics about SELinux and the network using NetworkManager.
+It provides metrics about SELinux, the network using NetworkManager and the
+list of installed RPM packages.
 
 `metrics-exporter@.service` is started on demand by `metrics-exporter.socket`
 whenever a client connects to the Varlink socket. It is not meant to be
@@ -65,6 +66,7 @@ The following metric families are currently provided:
 | `org.openSUSE.Metrics.SELinux.MaxKernelPolicyVersion` | The maximum SELinux policy version supported by the running kernel. |
 | `org.openSUSE.Metrics.SELinux.PolicyRPMVersion` | Name, version, release and architecture of the installed `selinux-policy` package. |
 | `org.openSUSE.Metrics.SELinux.PolicyBooleans` | The current state (`on` or `off`) of every SELinux policy boolean, one metric object per boolean. If the pending value of a boolean differs from its active value, an additional `pending` field is reported. |
+| `org.openSUSE.Metrics.Packages` | Per package metric reporting an installed RPM package. Each installed package is reported as a separate metric object named after the package, with the value `epoch:version-release.arch` and `version`, `release`, `arch` and (if non-zero) `epoch` fields. Only available if `metrics-exporter` was built with `librpm` support. |
 
 The SELinux metrics are only reported if SELinux support was compiled into
 `metrics-exporter`. It can be disabled or restricted via
@@ -75,6 +77,11 @@ The network metrics can be disabled entirely via `metrics-exporter.conf`
 `org.openSUSE.Metrics.Network.DeviceState` and
 `org.openSUSE.Metrics.Network.ManagedInterfaces` metrics are only reported
 if `metrics-exporter` was built with `NetworkManager` support.
+
+The `org.openSUSE.Metrics.Packages` metric is disabled by default, since it
+lists every installed package, and can be enabled via
+`metrics-exporter.conf` (see [Configuration](#configuration) below). It is
+only reported if `metrics-exporter` was built with `librpm` support.
 
 ## Configuration
 
@@ -128,6 +135,7 @@ values are stripped.
 | Option | Description |
 | --- | --- |
 | `network` | A boolean value which controls whether the network metrics are exported at all. The built-in default is `true`. |
+| `packages` | A boolean value which controls whether the `org.openSUSE.Metrics.Packages` metric listing the installed RPM packages is exported. The built-in default is `false`. |
 | `selinux` | A boolean value which controls whether the SELinux metrics are exported at all. The built-in default is `true`. |
 
 #### `[SELinux]`
@@ -149,6 +157,8 @@ verbose=true
 # Network and SELinux metrics are enabled per default
 network=true
 selinux=true
+# Listing installed packages is disabled per default
+packages=false
 
 [SELinux]
 # Do not report the individual SELinux policy booleans
