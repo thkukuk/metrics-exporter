@@ -244,6 +244,9 @@ static int
 metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *link)
 {
 #ifdef WITH_SELINUX
+  Header h;
+  rpmts ts;
+  rpmdbMatchIterator iter;
   const char *pkg_name = "selinux-policy";
   int r;
 
@@ -254,34 +257,34 @@ metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *
   if (rpmReadConfigFiles(NULL, NULL) != 0)
     {
       log_msg(LOG_ERR, "Failed to read RPM configuration");
-      return 0; // XXX error code?
+      return -1; // XXX better error code
     }
 
-  rpmts ts = rpmtsCreate();
-  rpmdbMatchIterator iter = rpmtsInitIterator(ts, RPMDBI_NAME, pkg_name, 0);
-
+  ts = rpmtsCreate();
+  iter = rpmtsInitIterator(ts, RPMDBI_NAME, pkg_name, 0);
   if (iter == NULL)
     {
       log_msg(LOG_ERR, "Failed to initialize RPM database iterator");
       rpmtsFree(ts);
-      return 0; // XXX error code?
+      return -1; // XXX better error code
     }
 
-  Header h;
   int found = 0;
 
   // Iterate over all installed instances of the package
   while ((h = rpmdbNextIterator(iter)) != NULL)
     {
-      const char *version, *release, *arch, *epoch;
+      _cleanup_free_ char *value_str = NULL;
+      const char *version, *release;
       found = 1;
 
       version = headerGetString(h, RPMTAG_VERSION);
       release = headerGetString(h, RPMTAG_RELEASE);
-      arch = headerGetString(h, RPMTAG_ARCH);
-      epoch = headerGetString(h, RPMTAG_EPOCH);
 
-      r = metric_build_send_rpm(mf, link, pkg_name, strna(version), strempty(release), strempty(arch), epoch);
+      if (asprintf(&value_str, "%s-%s", version, release) < 0)
+	return -ENOMEM;
+
+      r = metric_build_send_string(mf, link, pkg_name, value_str, NULL);
       if (r < 0)
 	break;
     }
