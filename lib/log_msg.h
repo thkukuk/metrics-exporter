@@ -5,5 +5,5 @@
 /* logging */
 #include <syslog.h>
 extern int debug_flag;
-extern void log_init (void);
-extern void log_msg (int priority, const char *fmt, ...);
+extern void log_init(void);
+extern void log_msg(int priority, const char *fmt, ...);
