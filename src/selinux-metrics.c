@@ -321,7 +321,7 @@ metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *
   release = strtok(NULL, " ");
   arch    = strtok(NULL, " ");
 
-  return = metric_build_send_rpm(mf, link, pkg_name, strna(version), strempty(release), strempty(arch), NULL);
+  return metric_build_send_rpm(mf, link, pkg_name, strna(version), strempty(release), strempty(arch), NULL);
 #endif
 #else
   return 0;

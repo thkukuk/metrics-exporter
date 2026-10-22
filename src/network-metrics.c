@@ -62,6 +62,7 @@ freeifnameindexp(struct if_nameindex **if_ni)
   *if_ni = NULL;
 }
 
+#ifdef WITH_NETWORK_MANAGER
 static inline void
 freeNMClientp(NMClient **client)
 {
@@ -69,6 +70,7 @@ freeNMClientp(NMClient **client)
     g_object_unref(*client);
   *client = NULL;
 }
+#endif
 
 static int
 metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
@@ -158,7 +160,8 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_network_device_state_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_network_device_state_generate(const MetricFamily _unused_(*mf),
+				      sd_varlink _unused_(*link))
 {
 #ifdef WITH_NETWORK_MANAGER
   _cleanup_(freeifnameindexp) struct if_nameindex *if_ni = NULL;
@@ -255,7 +258,8 @@ metrics_network_device_state_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_network_managed_interfaces_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_network_managed_interfaces_generate(const MetricFamily _unused_(*mf),
+					    sd_varlink _unused_(*link))
 {
 #ifdef WITH_NETWORK_MANAGER
   _cleanup_(freeNMClientp) NMClient *client = NULL;
