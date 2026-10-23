@@ -15,6 +15,7 @@
 #include "network-metrics.h"
 #include "packages-metrics.h"
 #include "selinux-metrics.h"
+#include "upower-metrics.h"
 #include "varlink-io.systemd.Metrics.h"
 
 
@@ -162,11 +163,15 @@ vl_method_metrics_describe(sd_varlink *link, sd_json_variant *parameters,
   if (r < 0)
     return r;
 
+  r = packages_metrics_describe(link);
+  if (r < 0)
+    return r;
+
   r = selinux_metrics_describe(link);
   if (r < 0)
     return r;
 
-  r = packages_metrics_describe(link);
+  r = upower_metrics_describe(link);
   if (r < 0)
     return r;
 
@@ -199,10 +204,16 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
 	}
     }
 
-
   if (cfg->network)
     {
       r = network_metrics_list(link);
+      if (r < 0)
+	return r;
+    }
+
+  if (cfg->packages)
+    {
+      r = packages_metrics_list(link);
       if (r < 0)
 	return r;
     }
@@ -214,9 +225,9 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
 	return r;
     }
 
-  if (cfg->packages)
+  if (cfg->upower)
     {
-      r = packages_metrics_list(link);
+      r = upower_metrics_list(link);
       if (r < 0)
 	return r;
     }

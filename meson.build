@@ -69,6 +69,10 @@ librpm = dependency('rpm', required: get_option('librpm'))
 if librpm.found()
   conf.set('WITH_LIBRPM', 1)
 endif
+upower_glib = dependency('upower-glib', required: get_option('upower-glib'))
+if upower_glib.found()
+  conf.set('WITH_UPOWER_GLIB', 1)
+endif
 
 libcommon_c = files('lib/log_msg.c', 'lib/exec_cmd.c', 'lib/read_config.c')
 libcommon = static_library(
@@ -81,13 +85,15 @@ libcommon = static_library(
 metrics_exporter_c = ['src/metrics-exporter.c',
                       'src/varlink-io.systemd.Metrics.c',
                       'src/metrics-varlink.c', 'src/selinux-metrics.c',
-                      'src/network-metrics.c', 'src/packages-metrics.c']
+                      'src/network-metrics.c', 'src/packages-metrics.c',
+                      'src/upower-metrics.c']
 
 executable('metrics-exporter',
            metrics_exporter_c,
            include_directories : inc,
 	   link_with : [libcommon],
-           dependencies : [libeconf, libsystemd, libselinux, libnm, librpm],
+           dependencies : [libeconf, libsystemd, libselinux, libnm, 
+                           librpm, upower_glib],
            install : true,
 	   install_dir: libexecdir)
 

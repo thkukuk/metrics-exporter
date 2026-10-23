@@ -11,6 +11,7 @@ typedef struct config_t {
   bool packages;
   bool selinux;
   bool selinux_booleans;
+  bool upower;
 } config_t;
 
 extern struct config_t *struct_config_free(config_t *cfg);

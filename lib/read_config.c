@@ -75,5 +75,9 @@ read_config(const char *name, config_t *cfg)
   if (error)
     return error;
 
+  error = get_bool_value(key_file, "[Metrics]", "upower", &(cfg->upower));
+  if (error)
+    return error;
+
   return ECONF_SUCCESS;
 }
