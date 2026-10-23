@@ -41,8 +41,9 @@
       state of the SELinux policy booleans. It also provides metrics about
       the network configuration, such as the configured IP addresses, the
       state of the network devices and the number of interfaces managed by
-      <command>NetworkManager</command>, as well as a metric listing every
-      installed RPM package.
+      <command>NetworkManager</command>, a metric listing every installed RPM
+      package, as well as metrics about the batteries known to
+      <command>UPower</command>.
     </para>
     <para>
       <command>metrics-exporter@.service</command> is started on demand by
@@ -265,6 +266,98 @@
           </para>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.Count</literal></term>
+        <listitem>
+          <para>
+            The number of batteries known to <command>UPower</command>. This
+            metric is only available if <command>metrics-exporter</command>
+            was built with <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.Vendor</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the battery vendor, keyed by the
+            battery's native path. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.Model</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the battery model, keyed by the
+            battery's native path. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.State</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the current battery state (for
+            example <literal>Charging</literal>, <literal>Discharging</literal>,
+            <literal>Fully Charged</literal>, <literal>Empty</literal>,
+            <literal>Pending Charge</literal> or
+            <literal>Pending Discharge</literal>), keyed by the battery's
+            native path. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.Charge</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the current battery charge as a
+            percentage (for example <literal>87.0%</literal>), keyed by the
+            battery's native path. This metric is only available if
+            <command>metrics-exporter</command> was built with
+            <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.Energy</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the current battery energy level in
+            Wh, keyed by the battery's native path. This metric is only
+            available if <command>metrics-exporter</command> was built with
+            <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.EnergyFull</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the battery energy level in Wh when
+            fully charged, keyed by the battery's native path. This metric is
+            only available if <command>metrics-exporter</command> was built
+            with <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><literal>org.openSUSE.Metrics.UPower.Battery.EnergyDesign</literal></term>
+        <listitem>
+          <para>
+            Per battery metric reporting the design energy level in Wh when
+            fully charged, keyed by the battery's native path. This metric is
+            only available if <command>metrics-exporter</command> was built
+            with <literal>upower-glib</literal> support.
+          </para>
+        </listitem>
+      </varlistentry>
     </variablelist>
     <para>
       The SELinux metrics are only reported if SELinux support was compiled
@@ -285,6 +378,14 @@
       via <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
       It is only reported if <command>metrics-exporter</command> was built
       with <literal>librpm</literal> support.
+    </para>
+    <para>
+      The <literal>org.openSUSE.Metrics.UPower.Battery.*</literal> metrics
+      can be disabled via
+      <citerefentry><refentrytitle>metrics-exporter.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.
+      They are only reported if <command>metrics-exporter</command> was built
+      with <literal>upower-glib</literal> support and a <command>UPower</command>
+      daemon is running.
     </para>
   </refsect1>
 

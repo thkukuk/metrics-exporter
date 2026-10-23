@@ -185,6 +185,16 @@
           </para>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><varname>upower</varname></term>
+        <listitem>
+          <para>
+            A boolean value which controls whether the
+            <literal>org.openSUSE.Metrics.UPower.Battery.*</literal> metrics
+            are exported. The built-in default is <option>true</option>.
+          </para>
+        </listitem>
+      </varlistentry>
     </variablelist>
   </refsect1>
 
@@ -217,9 +227,10 @@
 verbose=true
 
 [Metrics]
-# Network and SELinux metrics are enabled per default
+# Network, SELinux and UPower metrics are enabled per default
 network=true
 selinux=true
+upower=true
 # Listing installed packages is disabled per default
 packages=false
 

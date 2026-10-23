@@ -5,8 +5,8 @@ socket-activated service which collects additional system metrics and
 provides them via a `varlink` interface to
 [systemd-report](https://www.freedesktop.org/software/systemd/man/latest/systemd-report.html).
 
-It provides metrics about SELinux, the network using NetworkManager and the
-list of installed RPM packages.
+It provides metrics about SELinux, the network using NetworkManager, the
+list of installed RPM packages and the batteries known to UPower.
 
 `metrics-exporter@.service` is started on demand by `metrics-exporter.socket`
 whenever a client connects to the Varlink socket. It is not meant to be
@@ -67,6 +67,14 @@ The following metric families are currently provided:
 | `org.openSUSE.Metrics.SELinux.PolicyRPMVersion` | Name, version, release and architecture of the installed `selinux-policy` package. |
 | `org.openSUSE.Metrics.SELinux.PolicyBooleans` | The current state (`on` or `off`) of every SELinux policy boolean, one metric object per boolean. If the pending value of a boolean differs from its active value, an additional `pending` field is reported. |
 | `org.openSUSE.Metrics.Packages` | Per package metric reporting an installed RPM package. Each installed package is reported as a separate metric object named after the package, with the value `epoch:version-release.arch` and `version`, `release`, `arch` and (if non-zero) `epoch` fields. Only available if `metrics-exporter` was built with `librpm` support. |
+| `org.openSUSE.Metrics.UPower.Battery.Count` | The number of batteries known to UPower. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.Vendor` | Per battery metric reporting the battery vendor, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.Model` | Per battery metric reporting the battery model, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.State` | Per battery metric reporting the current battery state (for example `Charging`, `Discharging`, `Fully Charged`, `Empty`, `Pending Charge` or `Pending Discharge`), keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.Charge` | Per battery metric reporting the current battery charge as a percentage (for example `87.0%`), keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.Energy` | Per battery metric reporting the current battery energy level in Wh, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.EnergyFull` | Per battery metric reporting the battery energy level in Wh when fully charged, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.EnergyDesign` | Per battery metric reporting the design energy level in Wh when fully charged, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
 
 The SELinux metrics are only reported if SELinux support was compiled into
 `metrics-exporter`. It can be disabled or restricted via
@@ -82,6 +90,11 @@ The `org.openSUSE.Metrics.Packages` metric is disabled by default, since it
 lists every installed package, and can be enabled via
 `metrics-exporter.conf` (see [Configuration](#configuration) below). It is
 only reported if `metrics-exporter` was built with `librpm` support.
+
+The `org.openSUSE.Metrics.UPower.Battery.*` metrics can be disabled via
+`metrics-exporter.conf` (see [Configuration](#configuration) below). They
+are only reported if `metrics-exporter` was built with `upower-glib` support
+and a UPower daemon is running.
 
 ## Configuration
 
@@ -137,6 +150,7 @@ values are stripped.
 | `network` | A boolean value which controls whether the network metrics are exported at all. The built-in default is `true`. |
 | `packages` | A boolean value which controls whether the `org.openSUSE.Metrics.Packages` metric listing the installed RPM packages is exported. The built-in default is `false`. |
 | `selinux` | A boolean value which controls whether the SELinux metrics are exported at all. The built-in default is `true`. |
+| `upower` | A boolean value which controls whether the `org.openSUSE.Metrics.UPower.Battery.*` metrics are exported. The built-in default is `true`. |
 
 #### `[SELinux]`
 
@@ -154,9 +168,10 @@ values are stripped.
 verbose=true
 
 [Metrics]
-# Network and SELinux metrics are enabled per default
+# Network, SELinux and UPower metrics are enabled per default
 network=true
 selinux=true
+upower=true
 # Listing installed packages is disabled per default
 packages=false
 
