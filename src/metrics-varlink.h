@@ -13,7 +13,7 @@ typedef enum MetricFamilyType {
 
 typedef struct MetricFamily MetricFamily;
 
-typedef int (*metric_family_generate_func_t)(const MetricFamily *mf, sd_varlink *link);
+typedef int (*metric_family_generate_func_t)(const MetricFamily *mf, sd_varlink *link, void *userdata);
 
 typedef struct MetricFamily {
   const char *name;

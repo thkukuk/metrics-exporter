@@ -73,7 +73,8 @@ freeNMClientp(NMClient **client)
 #endif
 
 static int
-metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link,
+                                 void _unused_(*userdata))
 {
   _cleanup_(freeifaddrsp) struct ifaddrs *ifaddr = NULL;
   struct ifaddrs *ifa;
@@ -160,8 +161,9 @@ metrics_network_address_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_network_device_state_generate(const MetricFamily _unused_(*mf),
-				      sd_varlink _unused_(*link))
+metrics_network_device_state_generate(const MetricFamily _unused_(*mf), 
+				      sd_varlink _unused_(*link),
+                                      void _unused_(*userdata))
 {
 #ifdef WITH_NETWORK_MANAGER
   _cleanup_(freeifnameindexp) struct if_nameindex *if_ni = NULL;
@@ -259,7 +261,8 @@ metrics_network_device_state_generate(const MetricFamily _unused_(*mf),
 
 static int
 metrics_network_managed_interfaces_generate(const MetricFamily _unused_(*mf),
-					    sd_varlink _unused_(*link))
+					    sd_varlink _unused_(*link),
+                                            void _unused_(*userdata))
 {
 #ifdef WITH_NETWORK_MANAGER
   _cleanup_(freeNMClientp) NMClient *client = NULL;
@@ -350,7 +353,7 @@ network_metrics_list(sd_varlink *link)
 
   for (const MetricFamily *mf = network_metric_family_table; mf->name; mf++)
     {
-      r = mf->generate(mf, link);
+      r = mf->generate(mf, link, NULL);
       if (r < 0)
 	{
 	  log_msg(LOG_DEBUG, "Failed to list metric family '%s': %s", mf->name, strerror(-r));

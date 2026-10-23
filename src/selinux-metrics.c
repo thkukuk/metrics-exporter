@@ -25,7 +25,8 @@
 #include "selinux-metrics.h"
 
 static int
-metrics_selinux_status_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_status_generate(const MetricFamily *mf, sd_varlink *link, 
+				void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   if (is_selinux_enabled() > 0)
@@ -38,7 +39,8 @@ metrics_selinux_status_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_mode_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_mode_generate(const MetricFamily *mf, sd_varlink *link, 
+                              void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int r;
@@ -63,7 +65,8 @@ metrics_selinux_mode_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_mode_configfile_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_mode_configfile_generate(const MetricFamily *mf, sd_varlink *link,
+                              		 void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int rc;
@@ -94,7 +97,8 @@ metrics_selinux_mode_configfile_generate(const MetricFamily *mf, sd_varlink *lin
 }
 
 static int
-metrics_selinux_root_dir_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_root_dir_generate(const MetricFamily *mf, sd_varlink *link,
+                                  void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   _cleanup_free_ char *cp = NULL;
@@ -123,7 +127,8 @@ metrics_selinux_root_dir_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_policy_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_generate(const MetricFamily *mf, sd_varlink *link,
+                                void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   const char *policy_path;
@@ -142,7 +147,8 @@ metrics_selinux_policy_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_policy_mls_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_mls_generate(const MetricFamily *mf, sd_varlink *link,
+                                    void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int r;
@@ -167,7 +173,8 @@ metrics_selinux_policy_mls_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_policy_deny_unknown_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_deny_unknown_generate(const MetricFamily *mf, sd_varlink *link,
+                                             void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int r;
@@ -192,7 +199,8 @@ metrics_selinux_policy_deny_unknown_generate(const MetricFamily *mf, sd_varlink 
 }
 
 static int
-metrics_selinux_checkreqprot_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_checkreqprot_generate(const MetricFamily *mf, sd_varlink *link,
+                                      void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int r;
@@ -217,7 +225,8 @@ metrics_selinux_checkreqprot_generate(const MetricFamily *mf, sd_varlink *link)
 }
 
 static int
-metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link,
+                                        void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   int vers;
@@ -241,7 +250,8 @@ metrics_selinux_policy_version_generate(const MetricFamily *mf, sd_varlink *link
 }
 
 static int
-metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *link,
+                                            void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   Header h;
@@ -332,7 +342,8 @@ metrics_selinux_policy_rpm_version_generate(const MetricFamily *mf, sd_varlink *
 }
 
 static int
-metrics_selinux_policy_booleans_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_selinux_policy_booleans_generate(const MetricFamily *mf, sd_varlink *link,
+                                         void _unused_(*userdata))
 {
 #ifdef WITH_SELINUX
   char **bools = NULL;
@@ -487,7 +498,7 @@ selinux_metrics_list(sd_varlink *link, bool booleans)
     {
       if (!booleans && streq(mf->name, METRIC_ORG_OPENSUSE_METRICS_PREFIX "SELinux.PolicyBooleans"))
 	continue;
-      r = mf->generate(mf, link);
+      r = mf->generate(mf, link, NULL);
       if (r < 0)
 	{
 	  log_msg(LOG_DEBUG, "Failed to list metric family '%s': %s", mf->name, strerror(-r));

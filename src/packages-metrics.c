@@ -40,7 +40,8 @@ rpm_logger(rpmlogRec rec, rpmlogCallbackData _unused_(data))
 #endif
 
 static int
-metrics_packages_list_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link))
+metrics_packages_list_generate(const MetricFamily _unused_(*mf), sd_varlink _unused_(*link),
+                               void _unused_(*userdata))
 {
 #ifdef WITH_LIBRPM
   Header h;
@@ -139,7 +140,7 @@ packages_metrics_list(sd_varlink *link)
 
   for (const MetricFamily *mf = packages_metric_family_table; mf->name; mf++)
     {
-      r = mf->generate(mf, link);
+      r = mf->generate(mf, link, NULL);
       if (r < 0)
 	{
 	  log_msg(LOG_DEBUG, "Failed to list metric family '%s': %s", mf->name, strerror(-r));

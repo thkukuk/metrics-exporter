@@ -111,7 +111,8 @@ metric_build_send_package(const MetricFamily *mf, sd_varlink *link,
 }
 
 static int
-metrics_version_generate(const MetricFamily *mf, sd_varlink *link)
+metrics_version_generate(const MetricFamily *mf, sd_varlink *link,
+                         void _unused_(*userdata))
 {
   return metric_build_send_string(mf, link, NULL, VERSION, NULL);
 }
@@ -190,7 +191,7 @@ vl_method_metrics_list(sd_varlink *link, sd_json_variant *parameters,
 
   for (const MetricFamily *mf = main_metric_family_table; mf->name; mf++)
     {
-      r = mf->generate(mf, link);
+      r = mf->generate(mf, link, NULL);
       if (r < 0)
 	{
 	  log_msg(LOG_DEBUG, "Failed to list metric family '%s': %s", mf->name, strerror(-r));
