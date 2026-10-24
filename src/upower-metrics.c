@@ -156,12 +156,7 @@ metrics_battery_charge_generate(const MetricFamily _unused_(*mf),
 
   for (uint32_t i = 0; bi[i].native_path; i++)
     {
-      _cleanup_free_ char *value = NULL;
-
-      if (asprintf(&value, "%.1f%%", bi[i].percentage) < 0)
-        return -ENOMEM;
-
-      r = metric_build_send_string(mf, link, bi[i].native_path, value, NULL);
+      r = metric_build_send_double(mf, link, bi[i].native_path, bi[i].percentage, NULL);
       if (r < 0)
 	return r;
     }
@@ -180,12 +175,7 @@ metrics_battery_energy_generate(const MetricFamily _unused_(*mf),
 
   for (uint32_t i = 0; bi[i].native_path; i++)
     {
-      _cleanup_free_ char *value = NULL;
-
-      if (asprintf(&value, "%.2f", bi[i].energy) < 0)
-        return -ENOMEM;
-
-      r = metric_build_send_string(mf, link, bi[i].native_path, value, NULL);
+      r = metric_build_send_double(mf, link, bi[i].native_path, bi[i].energy, NULL);
       if (r < 0)
 	return r;
     }
@@ -204,12 +194,7 @@ metrics_battery_energy_full_generate(const MetricFamily _unused_(*mf),
 
   for (uint32_t i = 0; bi[i].native_path; i++)
     {
-      _cleanup_free_ char *value = NULL;
-
-      if (asprintf(&value, "%.2f", bi[i].energy_full) < 0)
-        return -ENOMEM;
-
-      r = metric_build_send_string(mf, link, bi[i].native_path, value, NULL);
+      r = metric_build_send_double(mf, link, bi[i].native_path, bi[i].energy_full, NULL);
       if (r < 0)
 	return r;
     }
@@ -228,12 +213,7 @@ metrics_battery_energy_design_generate(const MetricFamily _unused_(*mf),
 
   for (uint32_t i = 0; bi[i].native_path; i++)
     {
-      _cleanup_free_ char *value = NULL;
-
-      if (asprintf(&value, "%.2f", bi[i].energy_design) < 0)
-        return -ENOMEM;
-
-      r = metric_build_send_string(mf, link, bi[i].native_path, value, NULL);
+      r = metric_build_send_double(mf, link, bi[i].native_path, bi[i].energy_design, NULL);
       if (r < 0)
 	return r;
     }

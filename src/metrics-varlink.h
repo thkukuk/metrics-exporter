@@ -33,6 +33,10 @@ extern int metric_build_send_string(const MetricFamily *mf, sd_varlink *link,
 extern int metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
 				      const char *object, uint64_t value,
 				      sd_json_variant *fields);
+extern int metric_build_send_double(const MetricFamily* mf, sd_varlink *link,
+				    const char *object, double value,
+				    sd_json_variant *fields);
+
 extern int metric_build_send_package(const MetricFamily *mf, sd_varlink *link,
 				     const char *name, const char *version,
 				     const char *release, const char *arch,

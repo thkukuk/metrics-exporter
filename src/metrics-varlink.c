@@ -82,6 +82,21 @@ metric_build_send_unsigned(const MetricFamily *mf, sd_varlink *link,
 }
 
 int
+metric_build_send_double(const MetricFamily *mf, sd_varlink *link,
+			 const char *object, double value,
+			 sd_json_variant *fields)
+{
+  _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
+  int r;
+
+  r = sd_json_variant_new_real(&v, value);
+  if (r < 0)
+    return r;
+
+  return metric_build_send(mf, link, object, v, fields);
+}
+
+int
 metric_build_send_package(const MetricFamily *mf, sd_varlink *link,
 			  const char *name, const char *version,
 			  const char *release, const char *arch,
