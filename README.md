@@ -75,6 +75,7 @@ The following metric families are currently provided:
 | `org.openSUSE.Metrics.UPower.Battery.Energy` | Per battery metric reporting the current battery energy level in Wh, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
 | `org.openSUSE.Metrics.UPower.Battery.EnergyFull` | Per battery metric reporting the battery energy level in Wh when fully charged, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
 | `org.openSUSE.Metrics.UPower.Battery.EnergyDesign` | Per battery metric reporting the design energy level in Wh when fully charged, keyed by the battery's native path. Only available if `metrics-exporter` was built with `upower-glib` support. |
+| `org.openSUSE.Metrics.UPower.Battery.ChargeCycles` | Per battery metric reporting the number of charge cycles, keyed by the battery's native path. Only reported if the value is known. Only available if `metrics-exporter` was built with `upower-glib` support. |
 
 The SELinux metrics are only reported if SELinux support was compiled into
 `metrics-exporter`. It can be disabled or restricted via

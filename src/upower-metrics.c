@@ -25,6 +25,7 @@ struct battery_info {
   gdouble energy;
   gdouble energy_full;
   gdouble energy_design;
+  gint charge_cycles;
 };
 
 /* batteries is a calloc'd array terminated by a zeroed entry (native_path == NULL) */
@@ -126,9 +127,9 @@ metrics_battery_model_generate(const MetricFamily _unused_(*mf),
  }
 
 static int
-metrics_battery_state_generate(const MetricFamily _unused_(*mf),
-			       sd_varlink _unused_(*link),
-			       void _unused_(*userdata))
+metrics_battery_status_generate(const MetricFamily _unused_(*mf),
+				sd_varlink _unused_(*link),
+				void _unused_(*userdata))
 {
 #ifdef WITH_UPOWER_GLIB
   struct battery_info *bi = userdata;
@@ -146,9 +147,9 @@ metrics_battery_state_generate(const MetricFamily _unused_(*mf),
 }
 
 static int
-metrics_battery_charge_generate(const MetricFamily _unused_(*mf),
-				sd_varlink _unused_(*link),
-				void _unused_(*userdata))
+metrics_battery_charge_percentage_generate(const MetricFamily _unused_(*mf),
+					   sd_varlink _unused_(*link),
+					   void _unused_(*userdata))
 {
 #ifdef WITH_UPOWER_GLIB
   struct battery_info *bi = userdata;
@@ -221,6 +222,28 @@ metrics_battery_energy_design_generate(const MetricFamily _unused_(*mf),
   return 0;
 }
 
+static int
+metrics_battery_charge_cycles_generate(const MetricFamily _unused_(*mf),
+				       sd_varlink _unused_(*link),
+				       void _unused_(*userdata))
+{
+#ifdef WITH_UPOWER_GLIB
+  struct battery_info *bi = userdata;
+  int r;
+
+  for (uint32_t i = 0; bi[i].native_path; i++)
+    {
+      /* -1 means unknown or not applicable for this battery */
+      if (bi[i].charge_cycles < 0)
+	continue;
+      r = metric_build_send_unsigned(mf, link, bi[i].native_path, bi[i].charge_cycles, NULL);
+      if (r < 0)
+	return r;
+    }
+#endif
+  return 0;
+}
+
 static const MetricFamily upower_metric_family_table[] = {
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.Count",
@@ -241,20 +264,20 @@ static const MetricFamily upower_metric_family_table[] = {
     .generate = metrics_battery_model_generate,
   },
   {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.State",
-    .description = "Battery State",
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.Status",
+    .description = "Battery Charging Status",
     .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_battery_state_generate,
+    .generate = metrics_battery_status_generate,
   },
   {
-    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.Charge",
-    .description = "Battery Charge Percentage",
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.ChargePercentage",
+    .description = "Battery Charge Level in Percent",
     .type = METRIC_FAMILY_TYPE_STRING,
-    .generate = metrics_battery_charge_generate,
+    .generate = metrics_battery_charge_percentage_generate,
   },
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.Energy",
-    .description = "Battery Energy in Wh",
+    .description = "Current Battery Energy in Wh",
     .type = METRIC_FAMILY_TYPE_STRING,
     .generate = metrics_battery_energy_generate,
   },
@@ -269,6 +292,12 @@ static const MetricFamily upower_metric_family_table[] = {
     .description = "Full Battery Energy (Design) in Wh",
     .type = METRIC_FAMILY_TYPE_STRING,
     .generate = metrics_battery_energy_design_generate,
+  },
+  {
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.ChargeCycles",
+    .description = "Number of charge cycles of the battery",
+    .type = METRIC_FAMILY_TYPE_GAUGE,
+    .generate = metrics_battery_charge_cycles_generate,
   },
   {}
 };
@@ -366,6 +395,7 @@ upower_metrics_list(sd_varlink _unused_(*link))
 		   "energy", &batteries[bi].energy,
 		   "energy-full", &batteries[bi].energy_full,
 		   "energy-full-design", &batteries[bi].energy_design,
+		   "charge-cycles", &batteries[bi].charge_cycles,
 		   NULL);
       bi++;
     }
