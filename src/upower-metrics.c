@@ -157,7 +157,7 @@ metrics_battery_charge_percentage_generate(const MetricFamily _unused_(*mf),
 
   for (uint32_t i = 0; bi[i].native_path; i++)
     {
-      r = metric_build_send_double(mf, link, bi[i].native_path, bi[i].percentage, NULL);
+      r = metric_build_send_unsigned(mf, link, bi[i].native_path, bi[i].percentage, NULL);
       if (r < 0)
 	return r;
     }
@@ -223,6 +223,29 @@ metrics_battery_energy_design_generate(const MetricFamily _unused_(*mf),
 }
 
 static int
+metrics_battery_health_percentage_generate(const MetricFamily _unused_(*mf),
+					   sd_varlink _unused_(*link),
+					   void _unused_(*userdata))
+{
+#ifdef WITH_UPOWER_GLIB
+  struct battery_info *bi = userdata;
+  int r;
+
+  for (uint32_t i = 0; bi[i].native_path; i++)
+    {
+      /* Design capacity of 0 would mean a division by zero */
+      if (bi[i].energy_design <= 0)
+	continue;
+      r = metric_build_send_double(mf, link, bi[i].native_path,
+				   bi[i].energy_full / bi[i].energy_design * 100, NULL);
+      if (r < 0)
+	return r;
+    }
+#endif
+  return 0;
+}
+
+static int
 metrics_battery_charge_cycles_generate(const MetricFamily _unused_(*mf),
 				       sd_varlink _unused_(*link),
 				       void _unused_(*userdata))
@@ -272,7 +295,7 @@ static const MetricFamily upower_metric_family_table[] = {
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.ChargePercentage",
     .description = "Battery Charge Level in Percent",
-    .type = METRIC_FAMILY_TYPE_STRING,
+    .type = METRIC_FAMILY_TYPE_GAUGE,
     .generate = metrics_battery_charge_percentage_generate,
   },
   {
@@ -292,6 +315,12 @@ static const MetricFamily upower_metric_family_table[] = {
     .description = "Full Battery Energy (Design) in Wh",
     .type = METRIC_FAMILY_TYPE_STRING,
     .generate = metrics_battery_energy_design_generate,
+  },
+  {
+    .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.HealthPercent",
+    .description = "Full charge capacity relative to the design capacity, in percent",
+    .type = METRIC_FAMILY_TYPE_GAUGE,
+    .generate = metrics_battery_health_percentage_generate,
   },
   {
     .name = METRIC_ORG_OPENSUSE_METRICS_PREFIX "UPower.Battery.ChargeCycles",
